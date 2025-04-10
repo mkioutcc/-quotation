@@ -1,0 +1,151 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登入 / 註冊</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h2>登入或註冊帳號</h2>
+<form id="auth-form">
+      <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" required>
+      </div>
+      <div>
+        <label for="password">密碼</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" id="auth-button">登入 / 註冊</button>
+    </form>
+    <p id="auth-message"></p>
+  </div>
+
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">處理中...</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+  <script>
+    // 顯示載入中狀態
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.add('active');
+      document.getElementById('auth-button').disabled = true;
+    }
+
+    // 隱藏載入中狀態
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.remove('active');
+      document.getElementById('auth-button').disabled = false;
+    }
+
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      // 顯示載入中狀態
+      showLoading();
+
+      try {
+        // 先嘗試登入
+let { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+
+        // 登入成功
+        if (!error) {
+          window.location.href = 'notes.html';
+          return; // 不需要隱藏載入中狀態，因為會跳轉頁面
+        }
+
+        // 處理登入錯誤
+        console.log('登入錯誤：', error.message);
+
+        // 密碼錯誤
+        if (error.message === 'Invalid login credentials') {
+          // 嘗試註冊來檢查電子郵件是否已存在
+const { data: signUpData, error: signupError } = await window.supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: window.location.origin + '/notes.html'
+            }
+          });
+
+          // 檢查註冊結果
+          if (signupError) {
+            // 註冊錯誤
+            document.getElementById('auth-message').textContent = '❌ 註冊失敗：' + signupError.message;
+          } else if (signUpData?.user?.identities?.length === 0) {
+            // 電子郵件已存在，密碼錯誤
+            document.getElementById('auth-message').textContent = '❌ 密碼錯誤，請重新輸入';
+          } else {
+            // 新註冊成功
+            document.getElementById('auth-message').textContent = '✅ 註冊成功！請查看信箱驗證後再登入';
+          }
+        }
+        // 用戶不存在
+        else if (error.message.includes('user not found')) {
+          // 進行註冊
+const { error: signupError } = await window.supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: window.location.origin + '/notes.html'
+            }
+          });
+
+          if (signupError) {
+            document.getElementById('auth-message').textContent = '❌ 註冊失敗：' + signupError.message;
+          } else {
+            document.getElementById('auth-message').textContent = '✅ 註冊成功！請查看信箱驗證後再登入';
+          }
+        }
+        // Email 未確認
+        else if (error.message.includes('Email not confirmed') || error.message.includes('not confirmed')) {
+          document.getElementById('auth-message').textContent = '❌ 電子郵件未驗證，請查看信箱進行驗證';
+
+          // 提供重新發送驗證郵件的選項
+          const resendButton = document.createElement('button');
+          resendButton.textContent = '重新發送驗證郵件';
+          resendButton.className = 'resend-button';
+          resendButton.onclick = async (evt) => {
+            evt.preventDefault();
+const { error: resendError } = await window.supabaseClient.auth.resend({
+              type: 'signup',
+              email: email,
+              options: {
+                emailRedirectTo: window.location.origin + '/notes.html'
+              }
+            });
+
+            if (resendError) {
+              document.getElementById('auth-message').textContent = '❌ 發送驗證郵件失敗：' + resendError.message;
+            } else {
+              document.getElementById('auth-message').textContent = '✅ 驗證郵件已發送，請查看信箱';
+            }
+          };
+
+          document.getElementById('auth-message').appendChild(document.createElement('br'));
+          document.getElementById('auth-message').appendChild(resendButton);
+        }
+        // 其他錯誤
+        else {
+          document.getElementById('auth-message').textContent = '❌ 登入失敗：' + error.message;
+        }
+      } catch (err) {
+        console.error('發生錯誤：', err);
+        document.getElementById('auth-message').textContent = '❌ 發生錯誤，請稍後再試';
+      } finally {
+        // 隱藏載入中狀態
+        hideLoading();
+      }
+    })
+
+      </script>
+</body>
+</html>

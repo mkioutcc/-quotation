@@ -1,0 +1,174 @@
+<!-- trash.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>回收站</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h2>回收站 🗑️</h2>
+
+    <!-- 導覽列 -->
+    <div class="navbar">
+      <a href="notes.html" class="nav-link">我的筆記</a>
+      <a href="trash.html" class="nav-link active">回收站</a>
+      <a href="quotation.html" class="nav-link">估價單</a>
+      <button id="refresh-button" class="refresh-button">🔄 刷新</button>
+    </div>
+
+    <!-- 回收站內容 -->
+    <div id="trash-list" class="notes-container">
+      <!-- 回收站筆記將在這裡顯示 -->
+    </div>
+
+    <button onclick="signOut()" class="danger">登出</button>
+  </div>
+
+  <!-- 載入中顯示 -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">處理中...</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+  <script>
+    let currentUser;
+
+    // 顯示載入中狀態
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.add('active');
+    }
+
+    // 隱藏載入中狀態
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.remove('active');
+    }
+
+    // 初始化頁面
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await checkAuthAndRedirect();
+      if (!currentUser) return;
+
+      // 確保 supabaseClient 已初始化
+      if (!window.supabaseClient) {
+        console.error('Supabase client 未初始化');
+        return;
+      }
+
+      // 設置刷新按鈕
+      document.getElementById('refresh-button').addEventListener('click', () => {
+        loadTrash();
+      });
+
+      // 延遲執行查詢確保初始化完成
+      setTimeout(loadTrash, 100);
+    });
+
+    // 載入回收站
+    async function loadTrash() {
+      showLoading();
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('user_notes')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('is_deleted', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        renderTrash(data || []);
+      } catch (error) {
+        console.error('載入回收站失敗：', error);
+        alert('❌ 載入回收站失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 渲染回收站
+    function renderTrash(trashNotes) {
+      const list = document.getElementById('trash-list');
+      list.innerHTML = '';
+
+      if (trashNotes.length === 0) {
+        list.innerHTML = '<div class="note-item">回收站是空的</div>';
+        return;
+      }
+
+      trashNotes.forEach(note => {
+        const noteElement = document.createElement('div');
+        noteElement.className = 'note-item';
+
+        let tagsHtml = '';
+        if (note.tags && Array.isArray(note.tags) && note.tags.length > 0) {
+          tagsHtml = '<div class="note-tags">' +
+            note.tags.map(tag => `<div class="tag">${tag}</div>`).join('') +
+            '</div>';
+        }
+
+        noteElement.innerHTML = `
+          <div class="note-content">${note.content}</div>
+          ${tagsHtml}
+          ${note.image_url ? `<img src="${note.image_url}" class="note-image">` : ''}
+          <div class="note-actions">
+            <button class="success" onclick="restoreNote(${note.id})">♻️ 還原</button>
+            <button class="danger" onclick="permanentlyDeleteNote(${note.id})">🗑 永久刪除</button>
+          </div>
+        `;
+
+        list.appendChild(noteElement);
+      });
+    }
+
+    // 還原筆記
+    async function restoreNote(id) {
+      showLoading();
+      try {
+        const { error } = await window.supabaseClient
+          .from('user_notes')
+          .update({ is_deleted: false })
+          .eq('id', id)
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        await loadTrash();
+      } catch (error) {
+        console.error('❌ 還原失敗：', error);
+        alert('❌ 還原失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 永久刪除筆記
+    async function permanentlyDeleteNote(id) {
+      const confirmDelete = confirm('確定要永久刪除這則筆記嗎？此操作無法復原！');
+      if (!confirmDelete) return;
+
+      showLoading();
+      try {
+        const { error } = await window.supabaseClient
+          .from('user_notes')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        await loadTrash();
+      } catch (error) {
+        console.error('❌ 永久刪除失敗：', error);
+        alert('❌ 永久刪除失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1061 @@
+<!-- quotation.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>估價單系統</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 估價單特定樣式 */
+    .quotation-form {
+      background-color: white;
+      padding: 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+
+    .items-table th, .items-table td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .items-table th {
+      background-color: #f5f5f5;
+    }
+
+    .items-table input {
+      width: 100%;
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+    }
+
+    .items-table .subtotal {
+      background-color: #f9f9f9;
+    }
+
+    .add-item-btn {
+      margin-bottom: 15px;
+    }
+
+    .total-row {
+      font-weight: bold;
+      background-color: #f5f5f5;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .preview-container {
+      margin-top: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      background-color: #f9f9f9;
+    }
+
+    .preview-title {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+   /* 列印樣式 */
+/* 列印樣式 */
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@media print {
+
+/* --- 1. 基礎設定：隱藏非列印內容 --- */
+
+/* 先隱藏 body 下的所有內容 */
+body {
+   visibility: hidden !important;
+}
+/* 移除畫面上非列印區的邊界/內距 */
+html, body {
+   margin: 0 !important;
+   padding: 0 !important;
+   background: white !important; /* 確保背景是白色 */
+}
+
+/* --- 2. 顯示列印區塊並定位 --- */
+
+/* 使 print-section 及其內容可見 */
+.print-section, .print-section * {
+   visibility: visible !important;
+   /* !! 重要：嘗試強制列印背景顏色和圖片 !! */
+   /* 當使用者在列印對話框勾選「背景圖形」時，這會提示瀏覽器使用原始顏色 */
+   -webkit-print-color-adjust: exact !important; /* Chrome, Safari, Edge */
+   color-adjust: exact !important;             /* Standard (Firefox) */
+}
+
+/* 將 print-section 拉到畫面的最頂層、左側 */
+.print-section {
+  position: absolute !important; /* 使用絕對定位確保它在最上層 */
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important; /* 佔滿寬度 */
+  margin: 0 !important;  /* 移除外邊距 */
+  padding: 10mm !important; /* 使用頁面邊界作為內距 */
+  border: none !important; /* 移除邊框 */
+  box-shadow: none !important; /* 移除陰影 */
+  background-color: white !important; /* 設定基礎背景為白色 */
+  font-size: 10pt; /* 設定基本字型大小 */
+  color: black !important; /* 確保文字為黑色 */
+  display: block !important; /* 確保是區塊元素 */
+  box-sizing: border-box !important; /* 確保 padding 不會增加寬度 */
+}
+/* --- 針對特定元素：隱藏靜態的預覽標題 --- */
+.print-section > .preview-title {
+  display: none !important; /* 在列印時隱藏這個特定的標題 */
+}
+/* --- 3. 列印區塊內部元素樣式調整 --- */
+
+/* 標題樣式 */
+.print-section .preview-title {
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-bottom: 15px !important;
+}
+
+/* 表格樣式 */
+.print-section .items-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin-top: 10px !important;
+  page-break-inside: auto !important; /* 允許表格跨頁 */
+}
+
+/* 表格儲存格 (th, td) 樣式 */
+.print-section .items-table th,
+.print-section .items-table td {
+  border: 1px solid #000 !important; /* 黑色邊框 */
+  padding: 4px 6px !important; /* 內距 */
+  font-size: 9pt !important; /* 字型大小 */
+  word-wrap: break-word !important; /* 自動換行 */
+  text-align: left !important; /* 預設左對齊 */
+  vertical-align: top !important; /* 垂直靠上對齊 */
+  color: black !important; /* 確保文字顏色 */
+}
+
+/* 特定欄位文字對齊 (數量、單價、總價靠右) */
+.print-section .items-table td:nth-child(3), /* 數量欄 */
+.print-section .items-table td:nth-child(4), /* 單價欄 */
+.print-section .items-table td:nth-child(5) { /* 總價欄 */
+    text-align: right !important;
+}
+
+/* 表格標頭 (th) 樣式 */
+.print-section .items-table th {
+    /* !! 背景色：如果您希望列印時標頭是灰色，請取消註解下面這行 !! */
+    /* background-color: #eee !important; */
+    /* 如果您希望標頭能印出它原本的顏色(如果有的話)，就保持註解或刪除上面那行 */
+    font-weight: bold !important;
+    text-align: center !important; /* 表頭文字置中 */
+}
+
+/* 針對特定背景色的區塊 (例如黃色、橘色區塊) */
+/* 我們不再強制設定背景色，讓瀏覽器根據原始樣式和「背景圖形」設定決定 */
+.print-section div[style*="background:#ffff99"], /* 目標黃色區塊 */
+.print-section div[style*="background:#f4a460"] { /* 目標橘色區塊 */
+   /* 移除或註解掉了 background-color 的覆蓋 */
+
+   /* 保留其他列印調整 (例如邊框) */
+   border: 1px solid #ccc !important; /* 如果希望列印時有邊框 */
+   padding: 5px !important;
+   margin-top: 10px !important;
+   margin-bottom: 10px !important;
+}
+
+ /* 靠右對齊的總計文字 */
+ .print-section div[style*="text-align:right"] {
+     text-align: right !important;
+     font-weight: bold !important;
+     margin-top: 10px !important;
+ }
+
+ /* 將 flex 佈局改為 block 佈局 (通常在列印中更穩定) */
+ .print-section div[style*="display:flex"] {
+     display: block !important;
+ }
+ /* 處理原本 space-between 的元素間距 */
+ .print-section div[style*="justify-content:space-between"] > div {
+     margin-bottom: 5px !important;
+ }
+ /* 處理簽名區樣式 */
+ .print-section div[style*="justify-content:space-around"] {
+      margin-top: 30px !important;
+      padding-top: 15px !important;
+      border-top: 1px solid #000 !important;
+      display: block !important; /* 確保是 block */
+ }
+ /* 簽名區塊內的元素 */
+  .print-section div[style*="justify-content:space-around"] > div {
+      margin-bottom: 10px !important;
+      width: 100% !important; /* 讓簽名行佔滿寬度 */
+  }
+  
+
+/* --- 4. 避免列印不必要的元素 (如果有的話) --- */
+/* 例如，如果您確定還有其他元素需要隱藏，可以在這裡添加 */
+/* .some-other-element-to-hide-in-print { display: none !important; } */
+
+}
+/* ================== 列印樣式結束 ================== */
+    
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>估價單系統 📝</h2>
+
+    <!-- 導覽列 -->
+    <div class="navbar">
+      <a href="quotation.html" class="nav-link active">估價單</a>
+      <a href="notes.html" class="nav-link">我的筆記</a>
+      <a href="trash.html" class="nav-link">回收站</a>
+      <button id="logout-btn" class="nav-link" style="margin-left:auto;">登出</button>
+    </div>
+
+    <!-- 估價單表單 -->
+    <div class="quotation-form">
+      <form id="quotation-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="quotation-title">報價名稱</label>
+            <input type="text" id="quotation-title" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="customer-name">客戶名稱</label>
+            <input type="text" id="customer-name" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="contact-person">聯絡人</label>
+            <input type="text" id="contact-person" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contact-phone">聯絡電話</label>
+            <input type="text" id="contact-phone" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="quotation-date">報價日期</label>
+            <input type="date" id="quotation-date" class="form-control" required>
+          </div>
+        </div>
+
+        <h3>品項列表</h3>
+        <table class="items-table" id="items-table">
+          <thead>
+            <tr>
+              <th width="20%">名稱</th>
+              <th width="20%">規格</th>
+              <th width="10%">數量</th>
+              <th width="15%">單價</th>
+              <th width="15%">總價</th>
+              <th width="15%">備註</th>
+              <th width="5%"></th>
+            </tr>
+          </thead>
+          <tbody id="items-body">
+            <!-- 品項將在這裡動態添加 -->
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="4" style="text-align: right;">總計：</td> <!-- 調整 colspan -->
+              <td id="total-amount">0</td>
+              <td colspan="2"></td> <!-- 調整 colspan -->
+            </tr>
+          </tfoot>
+        </table>
+
+        <button type="button" id="add-item-btn" class="add-item-btn">+ 新增品項</button>
+
+        <div class="export-buttons">
+          <button type="button" id="preview-btn">預覽</button>
+          <button type="button" id="save-quotation-btn">儲存估價單</button>
+          <!-- Removed Excel Export Button -->
+          <button type="button" id="export-pdf-btn">匯出 PDF</button>
+          <button type="button" id="print-btn">列印</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 預覽區域 -->
+    <div class="preview-container" id="preview-container" style="display: none;">
+      <div class="preview-title">大發報價單</div>
+      <div id="preview-content"></div>
+    </div>
+
+    <!-- 載入中顯示 -->
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">處理中...</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <!-- Removed XLSX Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="script.js"></script> <!-- script.js 包含 checkAuthAndRedirect 和 supabaseClient 初始化 -->
+  <script>
+    // Supabase is initialized in script.js as window.supabaseClient
+
+    let currentUser;
+
+    // 顯示載入中狀態
+    function showLoading() {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.add('active');
+    }
+
+    // 隱藏載入中狀態
+    function hideLoading() {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+        // 初始化頁面
+    document.addEventListener('DOMContentLoaded', () => {
+      // 非阻塞登入檢查
+      if (typeof checkAuthAndRedirect === 'function') {
+        checkAuthAndRedirect().then(user => {
+          currentUser = user; // 保存用戶信息
+          console.log('User check complete:', currentUser);
+        }).catch(e => console.warn('登入檢查失敗，跳過', e));
+      } else {
+        console.warn('checkAuthAndRedirect 函數未定義');
+      }
+
+      // 綁定登出按鈕
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) logoutBtn.addEventListener('click', () => {
+        if (typeof signOut === 'function') {
+          signOut();
+        } else {
+          console.error('signOut 函數未定義');
+        }
+      });
+
+      // 設置當前日期
+      const today = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('quotation-date');
+      if (dateInput) {
+        dateInput.value = today;
+      } else {
+        console.error('找不到日期輸入框 #quotation-date');
+      }
+
+      // !! 修改開始：添加指定數量的初始空白品項 !!
+      const initialRowCount = 8; // 設定您想要的初始空白列數
+      const itemsBody = document.getElementById('items-body');
+
+      if (itemsBody) { // 確保品項表格的 tbody 存在
+        console.log(`準備添加 ${initialRowCount} 個初始空白品項...`);
+        for (let i = 0; i < initialRowCount; i++) {
+          addNewItem(); // 重複呼叫現有的 addNewItem 函數
+        }
+        console.log(`已成功添加 ${initialRowCount} 個初始空白品項。`);
+      } else {
+        console.error('找不到 #items-body 元素來添加初始品項');
+      }
+      // !! 修改結束 !!
+
+      // 綁定按鈕事件 (確保元素存在)
+      const addItemBtn = document.getElementById('add-item-btn');
+      if (addItemBtn) addItemBtn.addEventListener('click', addNewItem);
+      else console.error('找不到按鈕 #add-item-btn');
+
+      const previewBtn = document.getElementById('preview-btn');
+      if (previewBtn) previewBtn.addEventListener('click', previewQuotation);
+      else console.error('找不到按鈕 #preview-btn');
+
+      const saveBtn = document.getElementById('save-quotation-btn');
+      if (saveBtn) saveBtn.addEventListener('click', saveQuotation);
+      else console.error('找不到按鈕 #save-quotation-btn');
+
+      // Removed Excel Export Button Listener
+
+      const pdfBtn = document.getElementById('export-pdf-btn');
+      if (pdfBtn) pdfBtn.addEventListener('click', exportToPDF);
+      else console.error('找不到按鈕 #export-pdf-btn');
+
+      const printBtn = document.getElementById('print-btn');
+      if (printBtn) printBtn.addEventListener('click', printQuotation);
+      else console.error('找不到按鈕 #print-btn');
+
+      // 初始化時計算一次總計 (因為 addNewItem 內部會觸發計算)
+      // calculateTotal(); // 這行現在是多餘的，因為迴圈中的 addNewItem 已觸發計算
+    });
+
+    // ... (saveQuotation, addNewItem, removeItem, calculateSubtotal, calculateTotal, getFormData, validateForm, previewQuotation, exportToPDF, printQuotation 等函數保持不變) ...
+
+     // 儲存估價單到 Supabase
+     async function saveQuotation() {
+      console.log('saveQuotation called');
+      // 1. 先驗證表單 (確保至少有一行有效數據)
+      if (!validateForm()) return;
+
+      // 2. 獲取表單數據 (getFormData 現在會過濾掉空白行)
+      const data = getFormData();
+      console.log('要儲存的表單數據 (已過濾空白行):', data);
+
+      // 確保 supabaseClient 物件存在
+      if (!window.supabaseClient) {
+          console.error('Supabase client (window.supabaseClient) is not initialized.');
+          alert('Supabase 未初始化，無法儲存');
+          return;
+      }
+      console.log('Supabase client found:', window.supabaseClient);
+
+      // 檢查過濾後是否還有品項 (理論上 validateForm 已處理，但多一層保險)
+      if (data.items.length === 0) {
+          console.warn('getFormData 過濾後沒有品項，雖然 validateForm 應該已阻止。不執行儲存。');
+          alert('沒有有效的品項可儲存。');
+          return;
+      }
+
+
+      showLoading();
+      try {
+          // 使用 window.supabaseClient
+          const { data: insertData, error } = await window.supabaseClient.from('quotations').insert({
+            quotation_title: data.quotationTitle,
+            customer_name: data.customerName,
+            contact_person: data.contactPerson, // 確保欄位名稱與資料庫一致
+            contact_phone: data.contactPhone,   // 確保欄位名稱與資料庫一致
+            date: data.quotationDate,
+            items: data.items, // 這裡的 items 已經是過濾後的
+            total: data.total  // 這裡的 total 也是基於過濾後的 items 計算的
+          }).select();
+
+          if (error) {
+            console.error('儲存失敗:', error);
+            alert('儲存失敗：' + error.message);
+          } else {
+            console.log('儲存成功:', insertData);
+            alert('估價單已成功儲存！');
+            // 可選：儲存成功後清空表單或跳轉
+             document.getElementById('quotation-form').reset();
+            // // 清空後重新添加初始空白行
+             const initialRowCount = 8;
+             const itemsBody = document.getElementById('items-body');
+             if (itemsBody) {
+                 itemsBody.innerHTML = ''; // 清空現有行
+                 for (let i = 0; i < initialRowCount; i++) {
+                   addNewItem();
+                 }
+             }
+          }
+      } catch (err) {
+          console.error('儲存時發生錯誤:', err);
+          alert('儲存時發生錯誤: ' + err.message);
+      } finally {
+          hideLoading();
+      }
+    }
+
+    // 添加新品項
+    function addNewItem() {
+      const itemsBody = document.getElementById('items-body');
+      if (!itemsBody) {
+        console.error('找不到 #items-body');
+        return;
+      }
+
+      const newRow = itemsBody.insertRow();
+      newRow.innerHTML = `
+        <td><input type="text" class="item-name" required></td>
+        <td><input type="text" class="item-spec"></td>
+        <td><input type="number" class="item-quantity" value="1" min="1" required></td>
+        <td><input type="number" class="item-price" value="0" min="0" step="0.01" required></td>
+        <td class="subtotal">0.00</td> <!-- 預設值 -->
+        <td><input type="text" class="item-note"></td>
+        <td><button type="button" class="danger remove-item-btn">×</button></td>
+      `;
+
+      // 添加事件監聽器以計算小計和移除按鈕
+      const quantityInput = newRow.querySelector('.item-quantity');
+      const priceInput = newRow.querySelector('.item-price');
+      const removeBtn = newRow.querySelector('.remove-item-btn');
+
+      if (quantityInput) quantityInput.addEventListener('input', () => calculateSubtotal(newRow));
+      else console.error('找不到 .item-quantity in new row');
+
+      if (priceInput) priceInput.addEventListener('input', () => calculateSubtotal(newRow));
+      else console.error('找不到 .item-price in new row');
+
+      if (removeBtn) removeBtn.addEventListener('click', () => removeItem(removeBtn));
+      else console.error('找不到 .remove-item-btn in new row');
+
+      // 立即計算一次小計和總計
+      calculateSubtotal(newRow);
+    }
+
+    // 移除品項
+    function removeItem(button) {
+      const row = button.closest('tr');
+      if (row && row.parentNode) { // 確保 row 和 parentNode 存在
+        row.parentNode.removeChild(row);
+        calculateTotal();
+      } else {
+        console.error('無法找到要移除的行');
+      }
+    }
+
+    // 計算單行小計
+    function calculateSubtotal(row) {
+      const quantityInput = row.querySelector('.item-quantity');
+      const priceInput = row.querySelector('.item-price');
+      const subtotalCell = row.querySelector('.subtotal');
+
+      if (!quantityInput || !priceInput || !subtotalCell) {
+        console.error('計算小計時找不到元素 in row:', row);
+        return;
+      }
+
+      const quantity = parseFloat(quantityInput.value) || 0;
+      const price = parseFloat(priceInput.value) || 0;
+      const subtotal = quantity * price;
+
+      subtotalCell.textContent = subtotal.toFixed(2);
+      calculateTotal();
+    }
+
+    // 計算總計
+    function calculateTotal() {
+      const totalAmountCell = document.getElementById('total-amount');
+      if (!totalAmountCell) {
+        console.error('找不到 #total-amount');
+        return;
+      }
+
+      const subtotals = document.querySelectorAll('#items-body .subtotal');
+      let total = 0;
+
+      subtotals.forEach(cell => {
+        total += parseFloat(cell.textContent) || 0;
+      });
+
+      totalAmountCell.textContent = total.toFixed(2);
+    }
+
+    // 獲取表單數據
+    function getFormData() {
+      const customerName = document.getElementById('customer-name')?.value || '';
+      const contactPerson = document.getElementById('contact-person')?.value || '';
+      const contactPhone = document.getElementById('contact-phone')?.value || '';
+      const quotationDate = document.getElementById('quotation-date')?.value || '';
+
+      const items = []; // 這個陣列只會包含有填寫名稱的品項
+      const rows = document.getElementById('items-body')?.rows;
+
+      if (rows) {
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const nameInput = row.querySelector('.item-name');
+            // **關鍵：獲取名稱並去除前後空白**
+            const name = nameInput ? nameInput.value.trim() : '';
+
+            // **關鍵：只有當名稱不是空白時，才處理這一行並加入 items 陣列**
+            if (name !== '') {
+                const specInput = row.querySelector('.item-spec');
+                const quantityInput = row.querySelector('.item-quantity');
+                const priceInput = row.querySelector('.item-price');
+                const noteInput = row.querySelector('.item-note');
+
+                const spec = specInput ? specInput.value : '';
+                // 如果數量/價格為空，給予預設值 0
+                const quantity = quantityInput ? (parseFloat(quantityInput.value) || 0) : 0;
+                const price = priceInput ? (parseFloat(priceInput.value) || 0) : 0;
+                const subtotal = quantity * price; // 重新計算確保準確
+                const note = noteInput ? noteInput.value : '';
+
+                items.push({
+                  name, // 使用 trim 過的 name
+                  spec,
+                  quantity,
+                  price,
+                  subtotal,
+                  note
+                });
+            }
+            // 如果 name 是空白，則直接跳過這一行，不加入 items 陣列
+          }
+      }
+
+      // **關鍵：基於過濾後的 items 陣列來計算最終要儲存的總計**
+      const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+
+      // 注意：這裡不需要更新畫面上的總計欄位 (#total-amount)，
+      // 畫面上的總計由 calculateTotal() 函數負責，它會計算所有行的總和。
+      // 這個函數返回的 total 是專門給儲存、預覽、匯出使用的。
+      // 更新顯示的總計
+      const totalAmountCell = document.getElementById('total-amount');
+      if (totalAmountCell) totalAmountCell.textContent = total.toFixed(2);
+
+
+      return {
+        quotationTitle: document.getElementById('quotation-title')?.value || '',
+        customerName,
+        contactPerson,
+        contactPhone,
+        quotationDate,
+        items: items, // 返回只包含有效品項的陣列
+        total: total  // 返回基於有效品項計算的總額
+      };
+    }
+
+    // 驗證表單
+    function validateForm() {
+      console.log('執行 validateForm 驗證...'); // 增加日誌
+
+      // 1. 驗證客戶名稱和報價日期等非品項必填欄位
+      const form = document.getElementById('quotation-form');
+      if (!form) {
+        console.error('找不到表單 #quotation-form');
+        return false;
+      }
+      // 選擇器：選擇所有有 required 屬性，但不是品項名稱、數量、價格的 input
+      const requiredInputs = form.querySelectorAll('input[required]:not(.item-name):not(.item-quantity):not(.item-price)');
+      let firstInvalidInput = null;
+
+      for (let input of requiredInputs) {
+        if (!input.value.trim()) {
+          if (!firstInvalidInput) firstInvalidInput = input; // 記錄第一個無效輸入
+          // 視覺提示：改變邊框顏色
+          input.style.borderColor = 'red';
+        } else {
+          input.style.borderColor = ''; // 恢復正常邊框
+        }
+      }
+
+      if (firstInvalidInput) {
+          alert('請填寫客戶名稱和報價日期等必填欄位（紅色邊框標示）');
+          firstInvalidInput.focus();
+          console.log('驗證失敗：非品項必填欄位未填寫。');
+          return false;
+      }
+
+      // 2. 驗證是否至少填寫了一個品項的名稱
+      const itemsBody = document.getElementById('items-body');
+      let hasValidItem = false;
+      let firstEmptyItemNameInput = null; // 用於聚焦
+
+      if (itemsBody && itemsBody.rows.length > 0) {
+          const itemRows = itemsBody.rows;
+          for(let i = 0; i < itemRows.length; i++) {
+              const nameInput = itemRows[i].querySelector('.item-name');
+              // 檢查名稱去除空白後是否非空
+              if (nameInput && nameInput.value.trim() !== '') {
+                  hasValidItem = true;
+                  // 清除可能存在的錯誤提示樣式
+                  nameInput.style.borderColor = '';
+                  // 不需要聚焦，因為找到有效的了
+                  break; // 找到一個有效的就夠了
+              } else if (nameInput && !firstEmptyItemNameInput) {
+                  // 記錄第一個空白的品項名稱輸入框，以便後續聚焦
+                  firstEmptyItemNameInput = nameInput;
+              }
+          }
+      }
+
+      if (!hasValidItem) {
+          alert('請至少填寫一個品項的名稱');
+          // 聚焦到第一個空白的品項名稱輸入框（如果有的話）
+          if (firstEmptyItemNameInput) {
+              firstEmptyItemNameInput.style.borderColor = 'red'; // 提示使用者
+              firstEmptyItemNameInput.focus();
+          } else if (itemsBody && itemsBody.rows.length > 0) {
+              // 如果所有行都存在但都沒找到 .item-name (理論上不太可能)
+              const fallbackInput = itemsBody.querySelector('.item-name');
+              if (fallbackInput) fallbackInput.focus();
+              else document.getElementById('add-item-btn')?.focus();
+          }
+          else {
+               // 如果連一行都沒有，聚焦新增按鈕
+               document.getElementById('add-item-btn')?.focus();
+          }
+          console.log('驗證失敗：未填寫任何有效品項名稱。');
+          return false;
+      }
+
+      // 所有驗證通過
+      console.log('validateForm 驗證通過。');
+      return true;
+    }
+
+    // 預覽估價單 (使用過濾後的數據)
+    function previewQuotation() {
+      console.log('previewQuotation called');
+      // 1. 先執行表單驗證
+      if (!validateForm()) {
+        console.log('預覽中止，因為表單驗證未通過。');
+        return;
+      }
+
+      // 2. 獲取過濾後的表單數據
+      const data = getFormData();
+      const previewContainer = document.getElementById('preview-container');
+      const previewContent = document.getElementById('preview-content');
+
+      if (!previewContainer || !previewContent) {
+        console.error('找不到預覽容器或內容元素');
+        return;
+      }
+
+      // 3. 處理沒有有效品項的情況 (雖然 validateForm 應該已阻止，但做個保險)
+      if (data.items.length === 0) {
+           console.warn('預覽中止，因為 getFormData 返回了 0 個有效品項。');
+           previewContent.innerHTML = '<p style="text-align:center; color: red; padding: 20px;">請至少填寫一個有效的品項後再預覽。</p>';
+           previewContainer.style.display = 'block';
+           previewContainer.scrollIntoView({ behavior: 'smooth' });
+           return;
+      }
+
+      // 4. 生成預覽內容的 HTML (使用過濾後的 data.items 和 data.total)
+      let html = `
+        <div style="text-align:center; font-size:24px; font-weight:bold; margin-bottom:10px;">大發鋼構有限公司</div>
+        <div style="text-align:center; font-size:18px; background:#f4a460; padding:5px; margin-bottom:10px;">報價單</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+          <div>
+            <p><strong>報價名稱：</strong>${data.quotationTitle || 'N/A'}</p>
+            <p><strong>客戶名稱：</strong>${data.customerName || 'N/A'}</p>
+            <p><strong>聯絡人：</strong>${data.contactPerson || 'N/A'}</p>
+            <p><strong>電話：</strong>${data.contactPhone || 'N/A'}</p>
+          </div>
+          <div>
+            <p><strong>報價日期：</strong>${data.quotationDate || 'N/A'}</p>
+          </div>
+        </div>
+        <div style="background:#ffff99; padding:5px; margin-bottom:10px;">
+          <p><strong>報價方資訊：</strong></p>
+          <p>公司名稱：大發鋼構有限公司</p>
+          <p>地址：彰化縣埤頭鄉平原村稻香路464巷28號</p>
+          <p>電話：09-20552261</p>
+        </div>
+        <table class="items-table" style="width:100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #000; padding: 5px; background-color: #eee;">名稱</th>
+              <th style="border: 1px solid #000; padding: 5px; background-color: #eee;">規格</th>
+              <th style="border: 1px solid #000; padding: 5px; background-color: #eee; text-align: center;">數量</th>
+              <th style="border: 1px solid #000; padding: 5px; background-color: #eee; text-align: right;">單價</th>
+              <th style="border: 1px solid #000; padding: 5px; background-color: #eee; text-align: right;">總價</th>
+              <th style="border: 1px solid #000; padding: 5px; background-color: #eee;">備註</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      data.items.forEach(item => {
+        html += `
+          <tr>
+            <td style="border: 1px solid #000; padding: 5px;">${item.name || ''}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${item.spec || ''}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: center;">${item.quantity}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: right;">${item.price.toFixed(2)}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: right;">${item.subtotal.toFixed(2)}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${item.note || ''}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </tbody>
+        </table>
+        <div style="margin-top:10px; font-weight:bold; text-align:right; padding-right:10px;">總計新台幣：${data.total.toFixed(2)}元整</div>
+        <div style="background:#ffff99; padding:5px; margin-top:10px;">
+          <p><strong>附註：</strong></p>
+          <p>1.以上單價未稅價.  以上估算報價不含未詳列之工項工程。</p>
+          <p>2.簽約同時支付總工程款之30%(現金票)</p>
+          <p>3.製作完成進場按裝再支付總工程款之40%(現金票)</p>
+          <p>4.按裝完成再支付總工程款之30%(現金票)</p>
+          <p>5.本工程7天內驗收完畢付清尾款(現金票)</p>
+          <p>6.如已完成廠內製作，惟因其他工程延誤，致無法進場安裝，仍須依項2支付總工程款之40%</p>
+          <p>7.此單確認回傳後，示為貴司遵守以上之約定。</p>
+        </div>
+        <div style="margin-top:40px; padding-top: 20px; border-top: 1px solid #ccc; display:flex; justify-content:space-around;">
+          <div>付款方式：_________________________</div>
+          <div>客戶確認簽名：_________________________</div>
+        </div>
+      `;
+
+      // 5. 將生成的 HTML 放入預覽容器並顯示
+      previewContent.innerHTML = html;
+      previewContainer.style.display = 'block';
+
+      // 6. 滾動到預覽區域
+      previewContainer.scrollIntoView({ behavior: 'smooth' });
+      console.log('預覽內容已生成並顯示。');
+    }
+
+    // 匯出為 PDF (使用過濾後的數據)
+    function exportToPDF() {
+      console.log('exportToPDF called');
+      // 1. 先驗證表單
+      if (!validateForm()){
+         console.log('匯出 PDF 中止，因為表單驗證未通過。');
+         return;
+      }
+
+      showLoading(); // 顯示載入狀態
+
+      try {
+        // 2. 獲取過濾後的表單數據
+        const data = getFormData();
+
+        // 3. 處理沒有有效品項的情況 (保險)
+        if (data.items.length === 0) {
+            console.warn('匯出 PDF 中止，因為 getFormData 返回了 0 個有效品項。');
+            alert('沒有有效的品項可匯出 PDF。');
+            hideLoading();
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+
+        // 4. 創建 PDF 文件
+        const doc = new jsPDF({
+            orientation: 'p', // portrait
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        // --- 添加字體 (如果需要，確保字體可用) ---
+        // doc.addFont('NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
+        // doc.setFont('NotoSansTC');
+
+        // 5. 添加內容到 PDF (與 previewQuotation 類似的結構)
+        doc.setFontSize(18);
+        doc.text('大發鋼構有限公司', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+        doc.setFontSize(14); // 報價單標題可以小一點
+        doc.setFillColor(244, 164, 96); // 橘色 (近似 #f4a460)
+        doc.rect(15, 20, doc.internal.pageSize.getWidth() - 30, 8, 'F'); // 背景矩形
+        doc.setTextColor(0, 0, 0); // 文字顏色恢復黑色
+        doc.text('報價單', doc.internal.pageSize.getWidth() / 2, 25, { align: 'center' });
+
+        doc.setFontSize(10); // 客戶信息字體
+        let startY = 35;
+        doc.text(`客戶名稱：${data.customerName || 'N/A'}`, 15, startY);
+        doc.text(`報價日期：${data.quotationDate || 'N/A'}`, doc.internal.pageSize.getWidth() - 15, startY, { align: 'right' });
+        startY += 7;
+        doc.text(`聯絡人：${data.contactPerson || 'N/A'}`, 15, startY);
+        startY += 7;
+        doc.text(`聯絡電話：${data.contactPhone || 'N/A'}`, 15, startY);
+        startY += 10;
+
+        // 報價方資訊區塊
+        doc.setFillColor(255, 255, 153); // 淡黃色 (近似 #ffff99)
+        const infoBoxHeight = 20; // 估計高度
+        doc.rect(15, startY, doc.internal.pageSize.getWidth() - 30, infoBoxHeight, 'F');
+        doc.setTextColor(0, 0, 0);
+        doc.text('報價方資訊：', 20, startY + 5);
+        doc.text('公司名稱：大發鋼構有限公司', 20, startY + 10);
+        doc.text('地址：彰化縣埤頭鄉平原村稻香路464巷28號', 20, startY + 15);
+        // doc.text('電話：09-20552261', 20, startY + 20); // 如果空間夠
+        startY += infoBoxHeight + 5;
+
+        // 準備表格數據 (使用過濾後的 data.items)
+        const tableData = data.items.map(item => [
+          item.name || '',
+          item.spec || '',
+          item.quantity.toString(),
+          item.price.toFixed(2),
+          item.subtotal.toFixed(2),
+          item.note || ''
+        ]);
+
+        // 使用 autotable 插件創建表格
+        doc.autoTable({
+          head: [['名稱', '規格', '數量', '單價', '總價', '備註']],
+          body: tableData,
+          startY: startY,
+          theme: 'grid',
+          headStyles: { fillColor: [238, 238, 238], textColor: 0, fontStyle: 'bold', halign: 'center' }, // 灰色表頭, 置中
+          styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.1 }, // 黑色細網格線
+          columnStyles: {
+            0: { cellWidth: 40 }, // 名稱
+            1: { cellWidth: 40 }, // 規格
+            2: { cellWidth: 15, halign: 'center' }, // 數量
+            3: { cellWidth: 25, halign: 'right' }, // 單價
+            4: { cellWidth: 25, halign: 'right' }, // 總價
+            5: { cellWidth: 'auto' } // 備註
+          },
+          didDrawPage: function(hookData) {
+            // 可以在這裡添加頁碼等
+          }
+        });
+
+        // 獲取表格結束的 Y 座標
+        let finalY = doc.lastAutoTable.finalY;
+
+        // 添加總計 (使用過濾後的 data.total)
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text(`總計新台幣：${data.total.toFixed(2)}元整`, doc.internal.pageSize.getWidth() - 15, finalY + 8, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        finalY += 15;
+
+        // 附註區塊
+        const notes = [
+          '1.以上單價未稅價.  以上估算報價不含未詳列之工項工程。',
+          '2.簽約同時支付總工程款之30%(現金票)',
+          '3.製作完成進場按裝再支付總工程款之40%(現金票)',
+          '4.按裝完成再支付總工程款之30%(現金票)',
+          '5.本工程7天內驗收完畢付清尾款(現金票)',
+          '6.如已完成廠內製作，惟因其他工程延誤，致無法進場安裝，仍須依項2支付總工程款之40%',
+          '7.此單確認回傳後，示為貴司遵守以上之約定。'
+        ];
+        const noteLineHeight = 5;
+        const notePadding = 5;
+        const noteBoxHeight = notes.length * noteLineHeight + notePadding * 2;
+        doc.setFillColor(255, 255, 153); // 淡黃色
+        doc.rect(15, finalY, doc.internal.pageSize.getWidth() - 30, noteBoxHeight, 'F');
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(8);
+        doc.text('附註：', 20, finalY + notePadding);
+        let noteY = finalY + notePadding + noteLineHeight;
+        notes.forEach(note => {
+            // 檢查是否需要換頁
+            if (noteY > doc.internal.pageSize.getHeight() - 15) { // 預留頁底邊距
+                doc.addPage();
+                noteY = 15; // 新頁面的起始 Y 座標
+            }
+            doc.text(note, 20, noteY);
+            noteY += noteLineHeight;
+        });
+        finalY += noteBoxHeight + 15; // 增加間隔
+
+        // 檢查簽名欄是否需要換頁
+        if (finalY > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage();
+            finalY = 20; // 新頁面的起始 Y 座標
+        }
+
+        // 簽名欄
+        doc.setLineWidth(0.2); // 簽名線寬度
+        doc.line(35, finalY + 2, 90, finalY + 2); // 付款方式線
+        doc.line(doc.internal.pageSize.getWidth() / 2 + 35, finalY + 2, doc.internal.pageSize.getWidth() - 25, finalY + 2); // 客戶簽名線
+        doc.setFontSize(10);
+        doc.text('付款方式：', 15, finalY);
+        doc.text('客戶確認簽名：', doc.internal.pageSize.getWidth() / 2 + 5, finalY);
+
+        // 6. 生成文件名並保存 PDF
+        const fileName = `估價單_${data.customerName || '未命名客戶'}_${data.quotationDate || '無日期'}.pdf`;
+        doc.save(fileName);
+        console.log(`PDF 已匯出: ${fileName}`);
+
+      } catch (error) {
+        console.error('匯出 PDF 失敗：', error);
+        alert('匯出 PDF 失敗：' + error.message);
+      } finally {
+        hideLoading(); // 隱藏載入狀態
+      }
+    }
+
+    // 列印估價單 (調用 previewQuotation)
+    function printQuotation() {
+      console.log('printQuotation called');
+      // 1. 先驗證表單
+      if (!validateForm()) {
+        console.log('列印中止，因為表單驗證未通過。');
+        return;
+      }
+
+      // 2. 呼叫預覽函數來生成/更新內容並顯示預覽區塊
+      // previewQuotation 內部會處理驗證和獲取數據
+      previewQuotation();
+
+      const previewContainer = document.getElementById('preview-container');
+      if (!previewContainer) {
+        console.error('找不到預覽容器 #preview-container');
+        return;
+      }
+
+      // 檢查預覽內容是否因為沒有有效品項而被清空了
+      const previewContent = document.getElementById('preview-content');
+      if (previewContent && previewContent.textContent.includes('沒有有效的品項可預覽')) {
+          console.log('列印中止，因為預覽內容顯示沒有有效品項。');
+          return; // 如果預覽顯示錯誤信息，則不觸發列印
+      }
+
+      // 3. 添加用於列印的 CSS class
+      previewContainer.classList.add('print-section');
+      console.log('Added print-section class for printing.');
+
+      // 4. 使用延遲確保樣式應用
+      setTimeout(() => {
+        try {
+          // 5. 觸發瀏覽器列印
+          console.log('Calling window.print()...');
+          window.print();
+          console.log('window.print() called successfully.');
+        } catch (error) {
+          console.error('調用 window.print() 時發生錯誤:', error);
+          alert('無法啟動列印功能: ' + error.message);
+        } finally {
+          // 6. 清理：移除列印 class (無論成功或失敗)
+          // 使用 requestAnimationFrame 確保在下一個繪製幀移除，
+          // 避免在 print() 阻塞時過早移除
+          requestAnimationFrame(() => {
+              previewContainer.classList.remove('print-section');
+              console.log('Removed print-section class after print attempt.');
+          });
+          // 這裡不再恢復 display 狀態，讓 previewQuotation 決定是否顯示
+        }
+      }, 100); // 稍微延遲以確保 class 被應用
+    }
+
+    // 推薦：添加 afterprint 事件監聽器做最終清理
+    window.addEventListener('afterprint', () => {
+        const previewContainer = document.getElementById('preview-container');
+        if (previewContainer && previewContainer.classList.contains('print-section')) {
+            previewContainer.classList.remove('print-section');
+            console.log('Cleaned up print-section class via afterprint event.');
+        }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!-- notes.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的筆記</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>你好，歡迎使用筆記系統 ✍️</h2>
+
+    <!-- 導覽列 -->
+    <div class="navbar">
+      <a href="notes.html" class="nav-link active">我的筆記</a>
+      <a href="trash.html" class="nav-link">回收站</a>
+      <a href="quotation.html" class="nav-link">估價單</a>
+      <button id="refresh-button" class="refresh-button">🔄 刷新</button>
+    </div>
+
+    <!-- 搜尋功能 -->
+    <div class="search-container">
+      <input type="text" id="search-input" class="search-input" placeholder="搜尋筆記..." />
+    </div>
+
+    <!-- 標籤篩選 -->
+    <div id="tags-filter" class="note-tags">
+      <!-- 標籤會動態加入到這裡 -->
+    </div>
+
+    <!-- 新增筆記表單 -->
+    <div class="container">
+      <form id="note-form">
+        <textarea id="note-content" placeholder="輸入你的筆記..." required></textarea>
+        <input type="text" id="note-tags" placeholder="標籤（用逗號分隔）" />
+        <input type="file" id="note-image" accept="image/*" />
+        <button type="submit" id="submit-button">新增筆記</button>
+      </form>
+    </div>
+
+    <h3>我的筆記</h3>
+    <div id="notes-list" class="notes-container"></div>
+
+    <button onclick="signOut()" class="danger">登出</button>
+  </div>
+
+  <!-- 編輯筆記的彈出視窗 -->
+  <div id="edit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>編輯筆記</h3>
+        <span class="modal-close" id="close-modal">&times;</span>
+      </div>
+      <form id="edit-form">
+        <input type="hidden" id="edit-note-id" />
+        <textarea id="edit-content" required></textarea>
+        <input type="text" id="edit-tags" placeholder="標籤（用逗號分隔）" />
+        <button type="submit">更新筆記</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 載入中顯示 -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">處理中...</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+  <script>
+    let currentUser;
+    let allNotes = [];
+    let currentTab = 'notes';
+    let activeTagFilters = [];
+    let searchQuery = '';
+
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.add('active');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.remove('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await checkAuthAndRedirect();
+
+      document.getElementById('refresh-button').addEventListener('click', () => {
+        loadNotes();
+      });
+
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        renderNotes();
+      });
+
+      document.getElementById('close-modal').addEventListener('click', () => {
+        document.getElementById('edit-modal').classList.remove('active');
+      });
+
+      document.getElementById('edit-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await updateNote();
+      });
+
+      await loadNotes();
+    });
+
+    async function loadNotes() {
+      showLoading();
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('user_notes')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        allNotes = data || [];
+        renderNotes();
+        updateTagsFilter();
+      } catch (error) {
+        console.error('載入筆記失敗：', error);
+        alert('❌ 載入筆記失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function updateTagsFilter() {
+      const tagsSet = new Set();
+      allNotes.forEach(note => {
+        if (note.tags && Array.isArray(note.tags)) {
+          note.tags.forEach(tag => tagsSet.add(tag));
+        }
+      });
+
+      const tagsFilter = document.getElementById('tags-filter');
+      tagsFilter.innerHTML = '';
+
+      tagsSet.forEach(tag => {
+        const tagElement = document.createElement('div');
+        tagElement.className = 'tag';
+        if (activeTagFilters.includes(tag)) {
+          tagElement.className += ' active';
+        }
+        tagElement.textContent = tag;
+        tagElement.addEventListener('click', () => {
+          if (activeTagFilters.includes(tag)) {
+            activeTagFilters = activeTagFilters.filter(t => t !== tag);
+          } else {
+            activeTagFilters.push(tag);
+          }
+          renderNotes();
+          updateTagsFilter();
+        });
+        tagsFilter.appendChild(tagElement);
+      });
+    }
+
+    function renderNotes() {
+      const list = document.getElementById('notes-list');
+      list.innerHTML = '';
+
+      let filteredNotes = allNotes;
+
+      if (searchQuery) {
+        filteredNotes = filteredNotes.filter(note =>
+          note.content.toLowerCase().includes(searchQuery));
+      }
+
+      if (activeTagFilters.length > 0) {
+        filteredNotes = filteredNotes.filter(note => {
+          if (!note.tags || !Array.isArray(note.tags)) return false;
+          return activeTagFilters.some(tag => note.tags.includes(tag));
+        });
+      }
+
+      if (filteredNotes.length === 0) {
+        list.innerHTML = '<div class="note-item">沒有找到符合條件的筆記</div>';
+        return;
+      }
+
+      filteredNotes.forEach(note => {
+        const noteElement = document.createElement('div');
+        noteElement.className = 'note-item';
+
+        let noteContent = note.content;
+        if (searchQuery) {
+          const regex = new RegExp(`(${searchQuery})`, 'gi');
+          noteContent = noteContent.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        let tagsHtml = '';
+        if (note.tags && Array.isArray(note.tags) && note.tags.length > 0) {
+          tagsHtml = '<div class="note-tags">' +
+            note.tags.map(tag => `<div class="tag">${tag}</div>`).join('') +
+            '</div>';
+        }
+
+        noteElement.innerHTML = `
+          <div class="note-content">${noteContent}</div>
+          ${tagsHtml}
+          ${note.image_url ? `<img src="${note.image_url}" class="note-image">` : ''}
+          <div class="note-actions">
+            <button onclick="openEditModal(${note.id})">✏️ 編輯</button>
+            <button class="danger" onclick="moveToTrash(${note.id})">🗑 刪除</button>
+          </div>
+        `;
+
+        list.appendChild(noteElement);
+      });
+    }
+
+    function openEditModal(id) {
+      const note = allNotes.find(note => note.id === id);
+      if (!note) return;
+
+      document.getElementById('edit-note-id').value = id;
+      document.getElementById('edit-content').value = note.content;
+
+      if (note.tags && Array.isArray(note.tags)) {
+        document.getElementById('edit-tags').value = note.tags.join(', ');
+      } else {
+        document.getElementById('edit-tags').value = '';
+      }
+
+      document.getElementById('edit-modal').classList.add('active');
+    }
+
+    async function updateNote() {
+      const id = document.getElementById('edit-note-id').value;
+      const content = document.getElementById('edit-content').value;
+      const tagsInput = document.getElementById('edit-tags').value;
+
+      if (!content.trim()) {
+        alert('筆記內容不能為空');
+        return;
+      }
+
+      let tags = [];
+      if (tagsInput.trim()) {
+        tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+      }
+
+      showLoading();
+      try {
+        const { error } = await window.supabaseClient
+          .from('user_notes')
+          .update({ content, tags })
+          .eq('id', id)
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        document.getElementById('edit-modal').classList.remove('active');
+        await loadNotes();
+      } catch (error) {
+        console.error('❌ 編輯失敗：', error);
+        alert('❌ 編輯失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function moveToTrash(id) {
+      const confirmDelete = confirm('確定要刪除這則筆記嗎？');
+      if (!confirmDelete) return;
+
+      showLoading();
+      try {
+        const { error } = await window.supabaseClient
+          .from('user_notes')
+          .update({ is_deleted: true })
+          .eq('id', id)
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        await loadNotes();
+      } catch (error) {
+        console.error('❌ 刪除失敗：', error);
+        alert('❌ 刪除失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    document.getElementById('note-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const content = document.getElementById('note-content').value;
+      const tagsInput = document.getElementById('note-tags').value;
+      const file = document.getElementById('note-image').files[0];
+
+      if (!content.trim()) {
+        alert('筆記內容不能為空');
+        return;
+      }
+
+      let tags = [];
+      if (tagsInput.trim()) {
+        tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+      }
+
+      let image_url = null;
+
+      showLoading();
+      try {
+        if (file) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const filePath = `${currentUser.id}/${fileName}`;
+
+          const { error: uploadError } = await window.supabaseClient.storage
+            .from('note-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: publicUrlData } = window.supabaseClient.storage
+            .from('note-images')
+            .getPublicUrl(filePath);
+
+          image_url = publicUrlData.publicUrl;
+        }
+
+        const { error } = await window.supabaseClient
+          .from('user_notes')
+          .insert([{
+            content,
+            image_url,
+            user_id: currentUser.id,
+            tags,
+            is_deleted: false
+          }]);
+
+        if (error) throw error;
+
+        document.getElementById('note-content').value = '';
+        document.getElementById('note-tags').value = '';
+        document.getElementById('note-image').value = '';
+
+        await loadNotes();
+      } catch (error) {
+        console.error('❌ 新增失敗：', error);
+        alert('❌ 新增失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    });
+  </script>
+</body>
+</html>
