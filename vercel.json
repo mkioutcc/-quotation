@@ -1,17 +1,5 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/login.html",
-      "status": 200
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/login.html",
-      "status": 200
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
@@ -19,3 +7,4 @@
     }
   ]
 }
+
