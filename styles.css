@@ -314,6 +314,51 @@ textarea {
   }
 }
 
+/* --- System Title (Brand Header) --- */
+.system-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  text-align: center;
+  letter-spacing: 0.04em;
+  margin-top: 10px;
+  margin-bottom: 18px;
+  line-height: 1.2;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 2px 12px rgba(52, 152, 219, 0.08);
+  background: linear-gradient(90deg, #eaf6fd 0%, #fff 100%);
+  border-radius: 8px 8px 0 0;
+  padding: 8px 0 12px 0;
+  box-shadow: 0 2px 12px rgba(52, 152, 219, 0.04);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.system-title::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--primary-color);
+  border-radius: 2px;
+  margin: 10px auto 0 auto;
+  opacity: 0.85;
+}
+@media (max-width: 480px) {
+  .system-title {
+    font-size: 1.25rem;
+    padding: 6px 0 8px 0;
+    margin-top: 8px;
+    margin-bottom: 12px;
+  }
+  .system-title::after {
+    width: 28px;
+    height: 2px;
+    margin-top: 6px;
+  }
+}
+
 /* --- Login Page Modern UI --- */
 .login-card {
   background: #fff;
