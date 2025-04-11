@@ -285,16 +285,17 @@ html, body {
         </div>
 
         <h3>品項列表</h3>
-        <table class="items-table" id="items-table">
-          <thead>
-            <tr>
-              <th width="20%">名稱</th>
-              <th width="20%">規格</th>
-              <th width="10%">數量</th>
-              <th width="15%">單價</th>
-              <th width="15%">總價</th>
-              <th width="15%">備註</th>
-              <th width="5%"></th>
+        <div class="table-responsive-wrapper">
+          <table class="items-table" id="items-table">
+            <thead>
+              <tr>
+                <th>名稱</th>
+                <th>規格</th>
+                <th>數量</th>
+                <th>單價</th>
+                <th>總價</th>
+                <th>備註</th>
+                <th></th>
             </tr>
           </thead>
           <tbody id="items-body">
@@ -338,6 +339,7 @@ html, body {
   <!-- Removed XLSX Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="NotoSansTC-normal.js"></script>
   <script src="script.js"></script> <!-- script.js 包含 checkAuthAndRedirect 和 supabaseClient 初始化 -->
   <script>
     // Supabase is initialized in script.js as window.supabaseClient
@@ -863,9 +865,8 @@ html, body {
             format: 'a4'
         });
 
-        // --- 添加字體 (如果需要，確保字體可用) ---
-        // doc.addFont('NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
-        // doc.setFont('NotoSansTC');
+        // --- 設定字體為 NotoSansTC（已自動註冊，解決中文亂碼） ---
+        doc.setFont("NotoSansTC");
 
         // 5. 添加內容到 PDF (與 previewQuotation 類似的結構)
         doc.setFontSize(18);
@@ -913,8 +914,8 @@ html, body {
           body: tableData,
           startY: startY,
           theme: 'grid',
-          headStyles: { fillColor: [238, 238, 238], textColor: 0, fontStyle: 'bold', halign: 'center' }, // 灰色表頭, 置中
-          styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.1 }, // 黑色細網格線
+          headStyles: { font: 'NotoSansTC', fillColor: [238, 238, 238], textColor: 0, fontStyle: 'bold', halign: 'center' }, // 灰色表頭, 置中, 指定字型
+          styles: { font: 'NotoSansTC', fontSize: 9, cellPadding: 2, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.1 }, // 黑色細網格線, 指定字型
           columnStyles: {
             0: { cellWidth: 40 }, // 名稱
             1: { cellWidth: 40 }, // 規格
@@ -932,10 +933,11 @@ html, body {
         let finalY = doc.lastAutoTable.finalY;
 
         // 添加總計 (使用過濾後的 data.total)
+        doc.setFont("NotoSansTC"); // 確保字型
         doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
+        // doc.setFont(undefined, 'bold'); // 移除粗體，避免字型問題
         doc.text(`總計新台幣：${data.total.toFixed(2)}元整`, doc.internal.pageSize.getWidth() - 15, finalY + 8, { align: 'right' });
-        doc.setFont(undefined, 'normal');
+        // doc.setFont(undefined, 'normal'); // 移除恢復正常體
         finalY += 15;
 
         // 附註區塊
@@ -954,6 +956,7 @@ html, body {
         doc.setFillColor(255, 255, 153); // 淡黃色
         doc.rect(15, finalY, doc.internal.pageSize.getWidth() - 30, noteBoxHeight, 'F');
         doc.setTextColor(0, 0, 0);
+        doc.setFont("NotoSansTC"); // 確保字型
         doc.setFontSize(8);
         doc.text('附註：', 20, finalY + notePadding);
         let noteY = finalY + notePadding + noteLineHeight;
@@ -978,6 +981,7 @@ html, body {
         doc.setLineWidth(0.2); // 簽名線寬度
         doc.line(35, finalY + 2, 90, finalY + 2); // 付款方式線
         doc.line(doc.internal.pageSize.getWidth() / 2 + 35, finalY + 2, doc.internal.pageSize.getWidth() - 25, finalY + 2); // 客戶簽名線
+        doc.setFont("NotoSansTC"); // 確保字型
         doc.setFontSize(10);
         doc.text('付款方式：', 15, finalY);
         doc.text('客戶確認簽名：', doc.internal.pageSize.getWidth() / 2 + 5, finalY);

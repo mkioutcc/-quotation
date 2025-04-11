@@ -8,20 +8,21 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <h2>登入或註冊帳號</h2>
-<form id="auth-form">
-      <div>
-        <label for="email">Email</label>
-        <input type="email" id="email" required>
+  <div class="login-card">
+    <h2 class="login-title">登入或註冊帳號</h2>
+    <p class="login-desc">請輸入電子郵件與密碼登入或註冊新帳號</p>
+    <form id="auth-form" class="login-form">
+      <div class="input-group">
+        <label for="email" class="input-label">電子郵件</label>
+        <input type="email" id="email" class="input-field" placeholder="your@email.com" required>
       </div>
-      <div>
-        <label for="password">密碼</label>
-        <input type="password" id="password" required>
+      <div class="input-group">
+        <label for="password" class="input-label">密碼</label>
+        <input type="password" id="password" class="input-field" placeholder="請輸入密碼" required>
       </div>
-      <button type="submit" id="auth-button">登入 / 註冊</button>
+      <button type="submit" id="auth-button" class="login-btn">登入 / 註冊</button>
     </form>
-    <p id="auth-message"></p>
+    <div id="auth-message" class="auth-message"></div>
   </div>
 
   <div class="loading-overlay" id="loading-overlay">
