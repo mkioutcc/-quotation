@@ -368,6 +368,14 @@ textarea {
        color: var(--danger-color); /* Make logout more distinct */
    }
 
+  /* Responsive Table Container */
+  .table-responsive {
+      overflow-x: auto; /* Enable horizontal scrolling */
+      -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
+      margin-bottom: 15px; /* Add some space below the scrolling table */
+      border: 1px solid #eee; /* Optional: add a border to indicate scrollable area */
+  }
+
   /* Quotation Form Inputs Responsive */
   .items-table th, .items-table td {
       padding: 8px 5px; /* Adjust padding for smaller screens */
