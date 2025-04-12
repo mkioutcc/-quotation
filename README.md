@@ -11,24 +11,6 @@
 - 標籤系統（可以為筆記添加多個標籤）
 - 回收站功能（刪除的筆記可以還原）
 
-## 安裝與設定
-
-1. 確保你已經有一個 Supabase 專案
-2. 在 Supabase SQL 編輯器中執行 `update_schema.sql` 檔案中的 SQL 指令
-3. 將專案檔案放在網頁伺服器上或使用本地伺服器運行
-
-## 資料庫結構
-
-### user_notes 表格
-
-- `id`: 筆記 ID (主鍵)
-- `user_id`: 使用者 ID (外鍵連接到 auth.users)
-- `content`: 筆記內容
-- `image_url`: 圖片 URL (可選)
-- `created_at`: 建立時間
-- `tags`: 標籤陣列
-- `is_deleted`: 是否已刪除 (用於回收站功能)
-
 ## 使用說明
 
 ### 登入/註冊
