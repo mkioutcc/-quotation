@@ -300,10 +300,11 @@ html, body {
         </div>
 
         <h3>品項列表</h3>
-        <table class="items-table" id="items-table">
-          <thead>
-            <tr>
-              <th width="20%">名稱</th>
+        <div class="table-responsive"> <!-- 新增：表格容器 -->
+          <table class="items-table" id="items-table">
+            <thead>
+              <tr>
+                <th width="20%">名稱</th>
               <th width="20%">規格</th>
               <th width="10%">數量</th>
               <th width="15%">單價</th>
@@ -321,8 +322,9 @@ html, body {
               <td id="total-amount">0</td>
               <td colspan="2"></td> <!-- 調整 colspan -->
             </tr>
-          </tfoot>
-        </table>
+            </tfoot>
+          </table>
+        </div> <!-- 新增：關閉表格容器 -->
 
         <button type="button" id="add-item-btn" class="add-item-btn">+ 新增品項</button>
 
