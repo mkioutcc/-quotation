@@ -13,13 +13,16 @@
 
     <!-- 導覽列 -->
     <div class="navbar">
-      <a href="notes.html" class="nav-link active">我的筆記</a>
-      <a href="trash.html" class="nav-link">回收站</a>
-      <a href="quotation.html" class="nav-link">估價單</a>
-      <a href="quotation-list.html" class="nav-link">估價單清單</a>
-      <a href="salary.html" class="nav-link">薪資管理</a>
-      <button id="refresh-button" class="refresh-button" style="margin-right: auto;">🔄 刷新</button> <!-- 將刷新按鈕移到左邊一點 -->
-      <button id="logout-btn" class="nav-link" onclick="signOut()">登出</button> <!-- 登出按鈕移到右側 -->
+      <button class="hamburger-menu" id="hamburger-menu">☰</button>
+      <div class="nav-links" id="nav-links">
+        <a href="notes.html" class="nav-link active">我的筆記</a>
+        <a href="trash.html" class="nav-link">回收站</a>
+        <a href="quotation.html" class="nav-link">估價單</a>
+        <a href="quotation-list.html" class="nav-link">估價單清單</a>
+        <a href="salary.html" class="nav-link">薪資管理</a>
+        <button id="refresh-button" class="refresh-button" style="margin-right: auto;">🔄 刷新</button>
+        <button id="logout-btn" class="nav-link" onclick="signOut()">登出</button>
+      </div>
     </div>
 
     <!-- 搜尋功能 -->

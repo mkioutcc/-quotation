@@ -27,10 +27,25 @@ async function checkAuthAndRedirect() {
     }
     return user;
   } catch (error) {
-    console.error('檢查登入狀態失敗:', error);
-    return null;
+    console.error('登出失敗：', error);
+    alert('登出失敗：' + error.message);
   }
 }
+
+// Hamburger Menu Toggle Logic (Add this at the end)
+document.addEventListener('DOMContentLoaded', () => {
+  const hamburger = document.getElementById('hamburger-menu');
+  const navLinks = document.getElementById('nav-links');
+
+  if (hamburger && navLinks) {
+    hamburger.addEventListener('click', () => {
+      navLinks.classList.toggle('active'); // Toggle the 'active' class to show/hide
+    });
+  } else {
+      // Log if elements are not found on a specific page (optional)
+      // console.warn('Hamburger menu or nav links not found on this page.');
+  }
+});
 
 // 🚪 登出
 async function signOut() {

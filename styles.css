@@ -199,6 +199,17 @@ textarea {
   background-color: #ddd;
 }
 
+/* Hamburger Menu Button */
+.hamburger-menu {
+  display: none; /* Hidden by default on larger screens */
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px 10px;
+  color: var(--dark-color);
+}
+
 /* Modal */
 .modal {
   display: none;
@@ -296,4 +307,163 @@ textarea {
   button {
     padding: 6px 12px;
   }
+
+  /* Navbar Responsive */
+  .navbar {
+    position: relative; /* Needed for absolute positioning of nav-links */
+    justify-content: flex-end; /* Align hamburger to the right */
+  }
+
+  .hamburger-menu {
+    display: block; /* Show hamburger on small screens */
+    order: 1; /* Ensure hamburger is on the right */
+    margin-left: auto; /* Push other items away */
+  }
+
+  .nav-links {
+    display: none; /* Hide links by default */
+    flex-direction: column;
+    position: absolute;
+    top: 100%; /* Position below the navbar */
+    left: 0;
+    right: 0;
+    background-color: white;
+    box-shadow: var(--box-shadow);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    z-index: 999;
+    padding: 10px 0;
+  }
+
+  .nav-links.active {
+    display: flex; /* Show links when active */
+  }
+
+  .nav-links a,
+  .nav-links button {
+    width: 100%;
+    text-align: left;
+    padding: 10px 20px;
+    margin: 0;
+    border-bottom: 1px solid #eee; /* Separator */
+  }
+  .nav-links button {
+     background: none;
+     color: var(--text-color);
+     border: none;
+     font-size: inherit; /* Match link font size */
+  }
+  .nav-links button:hover {
+      background-color: #f0f0f0; /* Slight hover effect */
+  }
+  .nav-links a.active {
+      border-bottom: 1px solid #eee; /* Keep separator consistent */
+      background-color: #e9f5ff; /* Highlight active link */
+  }
+  .nav-links .refresh-button {
+      order: -1; /* Move refresh button to top if needed */
+      margin-right: 0; /* Reset margin */
+  }
+   .nav-links #logout-btn {
+       margin-left: 0; /* Reset margin */
+       color: var(--danger-color); /* Make logout more distinct */
+   }
+
+  /* Quotation Form Inputs Responsive */
+  .items-table th, .items-table td {
+      padding: 8px 5px; /* Adjust padding for smaller screens */
+      font-size: 14px; /* Slightly smaller font */
+  }
+  .items-table input[type="text"],
+  .items-table input[type="number"] {
+      padding: 6px;
+      font-size: 14px;
+      min-width: 60px; /* Ensure a minimum width */
+  }
+  /* Make specific columns wider if needed */
+  .items-table th:nth-child(1), /* Name */
+  .items-table td:nth-child(1) {
+      min-width: 100px;
+  }
+   .items-table th:nth-child(2), /* Spec */
+  .items-table td:nth-child(2) {
+      min-width: 80px;
+  }
+}
+
+/* Login Page Specific Styles */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Full viewport height */
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* Subtle gradient background */
+}
+
+.login-container {
+  background-color: white;
+  padding: 40px 30px; /* More padding */
+  border-radius: 8px; /* Slightly more rounded corners */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+  text-align: center;
+  max-width: 400px; /* Limit width */
+  width: 90%; /* Responsive width */
+}
+
+.company-title {
+  font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif; /* Example font */
+  font-size: 28px; /* Larger font size */
+  font-weight: bold;
+  color: var(--primary-color); /* Use primary color */
+  margin-bottom: 15px;
+  letter-spacing: 1px; /* Add some letter spacing */
+}
+
+.login-container h2 {
+  margin-bottom: 25px;
+  color: var(--dark-color);
+  font-weight: 600;
+}
+
+.login-container .form-group {
+  margin-bottom: 20px; /* More space between fields */
+  text-align: left; /* Align labels left */
+}
+
+.login-container label {
+  display: block;
+  margin-bottom: 8px; /* More space below label */
+  font-weight: 600;
+  color: #555;
+}
+
+.login-container input[type="email"],
+.login-container input[type="password"] {
+  padding: 12px; /* Larger padding */
+  font-size: 16px;
+  border: 1px solid #ccc; /* Slightly darker border */
+}
+
+.login-container button#auth-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  background-color: var(--secondary-color); /* Use secondary color for main button */
+  margin-top: 10px; /* Add space above button */
+  border: none;
+}
+
+.login-container button#auth-button:hover {
+  background-color: #27ae60; /* Darker shade on hover */
+}
+
+.login-container #auth-message {
+  margin-top: 20px;
+  font-size: 14px;
+  min-height: 20px; /* Reserve space for messages */
+}
+
+.login-container .resend-button {
+    margin-top: 15px;
+    padding: 8px 12px;
+    font-size: 14px;
 }
