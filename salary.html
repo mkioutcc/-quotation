@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>薪資管理</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 薪資管理特定樣式 */
+    .salary-form {
+      background-color: white;
+      padding: 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .salary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .salary-table th, .salary-table td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .salary-table th {
+      background-color: #f5f5f5;
+    }
+
+    .monthly-summary {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #e9f5ff;
+        border: 1px solid #b3d7ff;
+        border-radius: var(--border-radius);
+    }
+    .monthly-summary h4 {
+        margin-top: 0;
+        color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>薪資管理 💰</h2>
+
+    <!-- 導覽列 -->
+    <div class="navbar">
+      <a href="notes.html" class="nav-link">我的筆記</a>
+      <a href="trash.html" class="nav-link">回收站</a>
+      <a href="quotation.html" class="nav-link">估價單</a>
+      <a href="quotation-list.html" class="nav-link">估價單清單</a>
+      <a href="salary.html" class="nav-link active">薪資管理</a>
+      <button id="logout-btn" class="nav-link" onclick="signOut()" style="margin-left:auto;">登出</button>
+    </div>
+
+    <!-- 新增薪資表單 -->
+    <div class="salary-form">
+      <h3>新增薪資記錄</h3>
+      <form id="salary-form">
+        <div class="form-group">
+          <label for="employee-name">員工姓名</label>
+          <input type="text" id="employee-name" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="salary-month">月份</label>
+          <input type="month" id="salary-month" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="salary-amount">薪資金額</label>
+          <input type="number" id="salary-amount" class="form-control" min="0" step="1" required>
+        </div>
+        <button type="submit" id="add-salary-btn">新增薪資</button>
+      </form>
+    </div>
+
+    <!-- 薪資記錄列表 -->
+    <h3>薪資記錄</h3>
+    <div id="salary-list-container">
+      <!-- 薪資記錄將動態載入這裡 -->
+      <p>載入薪資記錄中...</p>
+    </div>
+
+    <!-- 每月薪資統計 -->
+    <div class="monthly-summary" id="monthly-summary-container">
+      <h4>每月薪資支出統計</h4>
+      <div id="monthly-summary-content">
+        <!-- 每月統計將動態載入這裡 -->
+        <p>計算統計中...</p>
+      </div>
+    </div>
+
+    <!-- 載入中顯示 -->
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">處理中...</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+  <script>
+    let currentUser;
+
+    // 顯示載入中狀態
+    function showLoading() {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.add('active');
+    }
+
+    // 隱藏載入中狀態
+    function hideLoading() {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+    // 初始化頁面
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await checkAuthAndRedirect();
+      if (!currentUser) return;
+
+      // 綁定登出按鈕
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) logoutBtn.addEventListener('click', signOut);
+
+      // 綁定表單提交事件
+      const salaryForm = document.getElementById('salary-form');
+      if (salaryForm) salaryForm.addEventListener('submit', handleAddSalary);
+
+      // 載入薪資記錄
+      await loadSalaryData();
+    });
+
+    // 載入薪資數據並渲染
+    async function loadSalaryData() {
+      showLoading();
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('salaries') // 假設表格名稱為 'salaries'
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('salary_month', { ascending: false }) // 按月份降序排列
+          .order('employee_name', { ascending: true }); // 同月份內按姓名排序
+
+        if (error) throw error;
+
+        renderSalaryList(data || []);
+        renderMonthlySummary(data || []);
+
+      } catch (error) {
+        console.error('載入薪資記錄失敗：', error);
+        alert('❌ 載入薪資記錄失敗：' + error.message);
+        document.getElementById('salary-list-container').innerHTML = '<p style="color: red;">無法載入薪資記錄。</p>';
+        document.getElementById('monthly-summary-content').innerHTML = '<p style="color: red;">無法計算統計。</p>';
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 渲染薪資列表
+    function renderSalaryList(salaries) {
+      const container = document.getElementById('salary-list-container');
+      if (!container) return;
+
+      if (salaries.length === 0) {
+        container.innerHTML = '<p>目前沒有薪資記錄。</p>';
+        return;
+      }
+
+      let tableHTML = `
+        <table class="salary-table">
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>員工姓名</th>
+              <th>薪資金額</th>
+              <th>記錄時間</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      salaries.forEach(salary => {
+        const salaryMonth = salary.salary_month || 'N/A'; // YYYY-MM 格式
+        const employeeName = salary.employee_name || 'N/A';
+        const salaryAmount = salary.amount ? salary.amount.toLocaleString() : 'N/A';
+        const createdAt = salary.created_at ? new Date(salary.created_at).toLocaleString() : 'N/A';
+
+        tableHTML += `
+          <tr>
+            <td>${salaryMonth}</td>
+            <td>${employeeName}</td>
+            <td>${salaryAmount}</td>
+            <td>${createdAt}</td>
+            <td><button class="danger" onclick="deleteSalary(${salary.id})">刪除</button></td>
+          </tr>
+        `;
+      });
+
+      tableHTML += `
+          </tbody>
+        </table>
+      `;
+      container.innerHTML = tableHTML;
+    }
+
+    // 渲染每月統計
+    function renderMonthlySummary(salaries) {
+        const summaryContent = document.getElementById('monthly-summary-content');
+        if (!summaryContent) return;
+
+        if (salaries.length === 0) {
+            summaryContent.innerHTML = '<p>沒有資料可供統計。</p>';
+            return;
+        }
+
+        const monthlyTotals = salaries.reduce((acc, salary) => {
+            const month = salary.salary_month; // YYYY-MM
+            if (!acc[month]) {
+                acc[month] = 0;
+            }
+            acc[month] += salary.amount || 0;
+            return acc;
+        }, {});
+
+        // 按月份排序 (從新到舊)
+        const sortedMonths = Object.keys(monthlyTotals).sort().reverse();
+
+        if (sortedMonths.length === 0) {
+            summaryContent.innerHTML = '<p>沒有資料可供統計。</p>';
+            return;
+        }
+
+        let summaryHTML = '<ul>';
+        sortedMonths.forEach(month => {
+            summaryHTML += `<li><strong>${month}:</strong> ${monthlyTotals[month].toLocaleString()} 元</li>`;
+        });
+        summaryHTML += '</ul>';
+
+        summaryContent.innerHTML = summaryHTML;
+    }
+
+
+    // 處理新增薪資
+    async function handleAddSalary(event) {
+      event.preventDefault();
+      showLoading();
+
+      const employeeName = document.getElementById('employee-name').value.trim();
+      const salaryMonth = document.getElementById('salary-month').value; // YYYY-MM
+      const salaryAmount = parseFloat(document.getElementById('salary-amount').value);
+
+      if (!employeeName || !salaryMonth || isNaN(salaryAmount) || salaryAmount < 0) {
+        alert('請確保所有欄位都已正確填寫。');
+        hideLoading();
+        return;
+      }
+
+      try {
+        const { error } = await window.supabaseClient
+          .from('salaries')
+          .insert([{
+            user_id: currentUser.id,
+            employee_name: employeeName,
+            salary_month: salaryMonth,
+            amount: salaryAmount
+          }]);
+
+        if (error) throw error;
+
+        // 清空表單
+        document.getElementById('salary-form').reset();
+        // 重新載入數據
+        await loadSalaryData();
+
+      } catch (error) {
+        console.error('新增薪資失敗：', error);
+        alert('❌ 新增薪資失敗：' + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 刪除薪資記錄
+    async function deleteSalary(id) {
+        if (!confirm('確定要刪除這筆薪資記錄嗎？')) return;
+
+        showLoading();
+        try {
+            const { error } = await window.supabaseClient
+                .from('salaries')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', currentUser.id); // 確保只能刪除自己的記錄
+
+            if (error) throw error;
+
+            // 重新載入數據
+            await loadSalaryData();
+
+        } catch (error) {
+            console.error('刪除薪資記錄失敗：', error);
+            alert('❌ 刪除薪資記錄失敗：' + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+  </script>
+</body>
+</html>

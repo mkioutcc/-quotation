@@ -97,7 +97,10 @@
 /* 列印樣式 */
 @page {
   size: A4;
-  margin: 10mm;
+  margin: 10mm; /* 保留頁邊距 */
+  /* 嘗試移除頁首頁尾 - 效果依瀏覽器而定 */
+  @top-center { content: none; }
+  @bottom-center { content: none; }
 }
 
 @media print {
@@ -141,6 +144,8 @@ html, body {
   color: black !important; /* 確保文字為黑色 */
   display: block !important; /* 確保是區塊元素 */
   box-sizing: border-box !important; /* 確保 padding 不會增加寬度 */
+  /* 新增：確保內容在頁面內 */
+  overflow: hidden !important;
 }
 /* --- 針對特定元素：隱藏靜態的預覽標題 --- */
 .print-section > .preview-title {
@@ -162,18 +167,23 @@ html, body {
   border-collapse: collapse !important;
   margin-top: 10px !important;
   page-break-inside: auto !important; /* 允許表格跨頁 */
+  table-layout: fixed; /* 新增：固定表格佈局，防止內容撐開 */
+  word-wrap: break-word; /* 新增：確保長文字能換行 */
 }
 
 /* 表格儲存格 (th, td) 樣式 */
 .print-section .items-table th,
 .print-section .items-table td {
   border: 1px solid #000 !important; /* 黑色邊框 */
-  padding: 4px 6px !important; /* 內距 */
-  font-size: 9pt !important; /* 字型大小 */
+  padding: 3px 4px !important; /* 稍微減少內距 */
+  font-size: 8pt !important; /* 稍微縮小字體 */
   word-wrap: break-word !important; /* 自動換行 */
   text-align: left !important; /* 預設左對齊 */
   vertical-align: top !important; /* 垂直靠上對齊 */
   color: black !important; /* 確保文字顏色 */
+  /* 新增：處理可能的溢出 */
+  overflow: hidden;
+  text-overflow: ellipsis; /* 可選：用省略號顯示溢出文字 */
 }
 
 /* 特定欄位文字對齊 (數量、單價、總價靠右) */
@@ -249,9 +259,11 @@ html, body {
 
     <!-- 導覽列 -->
     <div class="navbar">
-      <a href="quotation.html" class="nav-link active">估價單</a>
       <a href="notes.html" class="nav-link">我的筆記</a>
       <a href="trash.html" class="nav-link">回收站</a>
+      <a href="quotation.html" class="nav-link active">估價單</a>
+      <a href="quotation-list.html" class="nav-link">估價單清單</a>
+      <a href="salary.html" class="nav-link">薪資管理</a>
       <button id="logout-btn" class="nav-link" style="margin-left:auto;">登出</button>
     </div>
 
@@ -285,17 +297,16 @@ html, body {
         </div>
 
         <h3>品項列表</h3>
-        <div class="table-responsive-wrapper">
-          <table class="items-table" id="items-table">
-            <thead>
-              <tr>
-                <th>名稱</th>
-                <th>規格</th>
-                <th>數量</th>
-                <th>單價</th>
-                <th>總價</th>
-                <th>備註</th>
-                <th></th>
+        <table class="items-table" id="items-table">
+          <thead>
+            <tr>
+              <th width="20%">名稱</th>
+              <th width="20%">規格</th>
+              <th width="10%">數量</th>
+              <th width="15%">單價</th>
+              <th width="15%">總價</th>
+              <th width="15%">備註</th>
+              <th width="5%"></th>
             </tr>
           </thead>
           <tbody id="items-body">
@@ -316,7 +327,7 @@ html, body {
           <button type="button" id="preview-btn">預覽</button>
           <button type="button" id="save-quotation-btn">儲存估價單</button>
           <!-- Removed Excel Export Button -->
-          <button type="button" id="export-pdf-btn">匯出 PDF</button>
+          <!-- 移除匯出 PDF 按鈕 -->
           <button type="button" id="print-btn">列印</button>
         </div>
       </form>
@@ -339,7 +350,6 @@ html, body {
   <!-- Removed XLSX Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-  <script src="NotoSansTC-normal.js"></script>
   <script src="script.js"></script> <!-- script.js 包含 checkAuthAndRedirect 和 supabaseClient 初始化 -->
   <script>
     // Supabase is initialized in script.js as window.supabaseClient
@@ -418,10 +428,7 @@ html, body {
       else console.error('找不到按鈕 #save-quotation-btn');
 
       // Removed Excel Export Button Listener
-
-      const pdfBtn = document.getElementById('export-pdf-btn');
-      if (pdfBtn) pdfBtn.addEventListener('click', exportToPDF);
-      else console.error('找不到按鈕 #export-pdf-btn');
+      // 移除 PDF 按鈕監聽器
 
       const printBtn = document.getElementById('print-btn');
       if (printBtn) printBtn.addEventListener('click', printQuotation);
@@ -461,8 +468,16 @@ html, body {
 
       showLoading();
       try {
+          // 確保 currentUser 和 currentUser.id 存在
+          if (!currentUser || !currentUser.id) {
+              alert('無法獲取使用者資訊，請重新登入後再試。');
+              hideLoading();
+              return;
+          }
+
           // 使用 window.supabaseClient
           const { data: insertData, error } = await window.supabaseClient.from('quotations').insert({
+            user_id: currentUser.id, // **新增 user_id**
             quotation_title: data.quotationTitle,
             customer_name: data.customerName,
             contact_person: data.contactPerson, // 確保欄位名稱與資料庫一致
@@ -833,9 +848,12 @@ html, body {
       console.log('預覽內容已生成並顯示。');
     }
 
-    // 匯出為 PDF (使用過濾後的數據)
-    function exportToPDF() {
-      console.log('exportToPDF called');
+    // 移除 exportToPDF 函數
+    // function exportToPDF() { ... }
+
+    // 列印估價單 (調用 previewQuotation)
+    function printQuotation() {
+      console.log('printQuotation called');
       // 1. 先驗證表單
       if (!validateForm()){
          console.log('匯出 PDF 中止，因為表單驗證未通過。');
@@ -865,8 +883,21 @@ html, body {
             format: 'a4'
         });
 
-        // --- 設定字體為 NotoSansTC（已自動註冊，解決中文亂碼） ---
-        doc.setFont("NotoSansTC");
+        // --- 添加字體 ---
+        // !! 重要：要正確顯示中文，需要載入支援中文的字型檔 !!
+        // 下面是設置字型的範例，但 'NotoSansTC' 必須先被載入到 jsPDF 中
+        // 例如，通過 addFont() 方法載入 base64 編碼的字型檔
+        // 由於無法直接添加字型檔，這裡僅作為範例，實際效果取決於環境中是否已載入字型
+        try {
+             // 嘗試設置一個可能存在的字體名稱 (效果不保證)
+             // 在實際應用中，您需要確保 'NotoSansTC' 或其他中文字體已通過 addFont 正確載入
+             doc.setFont('NotoSansTC', 'normal');
+             console.log("Attempted to set font to NotoSansTC.");
+        } catch (e) {
+             console.error("Failed to set font 'NotoSansTC'. Make sure the font is loaded.", e);
+             // 可以嘗試回退到 jsPDF 可能內建但不支援中文的字體
+             doc.setFont('helvetica', 'normal');
+        }
 
         // 5. 添加內容到 PDF (與 previewQuotation 類似的結構)
         doc.setFontSize(18);
@@ -914,8 +945,8 @@ html, body {
           body: tableData,
           startY: startY,
           theme: 'grid',
-          headStyles: { font: 'NotoSansTC', fillColor: [238, 238, 238], textColor: 0, fontStyle: 'bold', halign: 'center' }, // 灰色表頭, 置中, 指定字型
-          styles: { font: 'NotoSansTC', fontSize: 9, cellPadding: 2, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.1 }, // 黑色細網格線, 指定字型
+          headStyles: { fillColor: [238, 238, 238], textColor: 0, fontStyle: 'bold', halign: 'center' }, // 灰色表頭, 置中
+          styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.1 }, // 黑色細網格線
           columnStyles: {
             0: { cellWidth: 40 }, // 名稱
             1: { cellWidth: 40 }, // 規格
@@ -933,11 +964,10 @@ html, body {
         let finalY = doc.lastAutoTable.finalY;
 
         // 添加總計 (使用過濾後的 data.total)
-        doc.setFont("NotoSansTC"); // 確保字型
         doc.setFontSize(10);
-        // doc.setFont(undefined, 'bold'); // 移除粗體，避免字型問題
+        doc.setFont(undefined, 'bold');
         doc.text(`總計新台幣：${data.total.toFixed(2)}元整`, doc.internal.pageSize.getWidth() - 15, finalY + 8, { align: 'right' });
-        // doc.setFont(undefined, 'normal'); // 移除恢復正常體
+        doc.setFont(undefined, 'normal');
         finalY += 15;
 
         // 附註區塊
@@ -956,7 +986,6 @@ html, body {
         doc.setFillColor(255, 255, 153); // 淡黃色
         doc.rect(15, finalY, doc.internal.pageSize.getWidth() - 30, noteBoxHeight, 'F');
         doc.setTextColor(0, 0, 0);
-        doc.setFont("NotoSansTC"); // 確保字型
         doc.setFontSize(8);
         doc.text('附註：', 20, finalY + notePadding);
         let noteY = finalY + notePadding + noteLineHeight;
@@ -981,7 +1010,6 @@ html, body {
         doc.setLineWidth(0.2); // 簽名線寬度
         doc.line(35, finalY + 2, 90, finalY + 2); // 付款方式線
         doc.line(doc.internal.pageSize.getWidth() / 2 + 35, finalY + 2, doc.internal.pageSize.getWidth() - 25, finalY + 2); // 客戶簽名線
-        doc.setFont("NotoSansTC"); // 確保字型
         doc.setFontSize(10);
         doc.text('付款方式：', 15, finalY);
         doc.text('客戶確認簽名：', doc.internal.pageSize.getWidth() / 2 + 5, finalY);

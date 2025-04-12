@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>估價單清單</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .quotation-list-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .quotation-list-table th, .quotation-list-table td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    .quotation-list-table th {
+      background-color: #f5f5f5;
+    }
+    .quotation-list-table tbody tr:hover {
+      background-color: #f9f9f9;
+      cursor: pointer;
+    }
+    .quotation-detail-modal {
+      /* 沿用 notes.html 的 modal 樣式 */
+    }
+    .quotation-detail-content {
+       /* 沿用 notes.html 的 modal-content 樣式 */
+       max-height: 80vh; /* 限制最大高度 */
+       overflow-y: auto; /* 超出時顯示滾動條 */
+    }
+    .quotation-detail-header {
+       /* 沿用 notes.html 的 modal-header 樣式 */
+    }
+    .quotation-detail-close {
+       /* 沿用 notes.html 的 modal-close 樣式 */
+    }
+    /* 估價單詳情表格樣式 (可沿用 quotation.html 的 items-table) */
+    .detail-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    .detail-items-table th, .detail-items-table td {
+        padding: 8px;
+        border: 1px solid #ccc;
+        text-align: left;
+        font-size: 0.9em;
+    }
+    .detail-items-table th {
+        background-color: #f0f0f0;
+    }
+    .detail-total {
+        font-weight: bold;
+        text-align: right;
+        margin-top: 10px;
+    }
+
+   /* --- 列印樣式 (從 quotation.html 複製過來) --- */
+    @page {
+      size: A4;
+      margin: 10mm; /* 保留頁邊距 */
+      /* 嘗試移除頁首頁尾 - 效果依瀏覽器而定 */
+      @top-center { content: none; }
+      @bottom-center { content: none; }
+    }
+
+    @media print {
+
+    /* --- 1. 基礎設定：隱藏非列印內容 --- */
+    body > *:not(.print-section) { /* 隱藏 body 下除了 print-section 以外的所有直接子元素 */
+       display: none !important;
+       visibility: hidden !important;
+    }
+    html, body {
+       margin: 0 !important;
+       padding: 0 !important;
+       background: white !important;
+    }
+
+    /* --- 2. 顯示列印區塊並定位 --- */
+    .print-section, .print-section * {
+       visibility: visible !important;
+       -webkit-print-color-adjust: exact !important;
+       color-adjust: exact !important;
+    }
+    .print-section {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 10mm !important;
+      border: none !important;
+      box-shadow: none !important;
+      background-color: white !important;
+      font-size: 10pt !important;
+      color: black !important;
+      display: block !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+    }
+    .print-section > .preview-title { /* 假設列印內容中有此 class */
+      display: none !important;
+    }
+
+    /* --- 3. 列印區塊內部元素樣式調整 --- */
+    .print-section .preview-title { /* 假設列印內容中有此 class */
+        font-size: 18pt !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin-bottom: 15px !important;
+    }
+    .print-section .items-table, /* 應用於複製過來的表格 */
+    .print-section .detail-items-table { /* 也應用於詳情表格 */
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin-top: 10px !important;
+      page-break-inside: auto !important;
+      table-layout: fixed !important;
+      word-wrap: break-word !important;
+    }
+    .print-section .items-table th,
+    .print-section .items-table td,
+    .print-section .detail-items-table th,
+    .print-section .detail-items-table td {
+      border: 1px solid #000 !important;
+      padding: 3px 4px !important;
+      font-size: 8pt !important;
+      word-wrap: break-word !important;
+      text-align: left !important;
+      vertical-align: top !important;
+      color: black !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .print-section .items-table td:nth-child(3),
+    .print-section .items-table td:nth-child(4),
+    .print-section .items-table td:nth-child(5),
+    .print-section .detail-items-table td:nth-child(3), /* 數量欄 */
+    .print-section .detail-items-table td:nth-child(4), /* 單價欄 */
+    .print-section .detail-items-table td:nth-child(5) { /* 總價欄 */
+        text-align: right !important;
+    }
+    .print-section .items-table th,
+    .print-section .detail-items-table th {
+        font-weight: bold !important;
+        text-align: center !important;
+    }
+    .print-section div[style*="background:#ffff99"],
+    .print-section div[style*="background:#f4a460"] {
+       border: 1px solid #ccc !important;
+       padding: 5px !important;
+       margin-top: 10px !important;
+       margin-bottom: 10px !important;
+    }
+     .print-section div[style*="text-align:right"] {
+         text-align: right !important;
+         font-weight: bold !important;
+         margin-top: 10px !important;
+     }
+     .print-section div[style*="display:flex"] {
+         display: block !important; /* 改為 block 以簡化列印佈局 */
+     }
+     .print-section div[style*="justify-content:space-between"] > div {
+         margin-bottom: 5px !important;
+     }
+     .print-section div[style*="justify-content:space-around"] {
+          margin-top: 30px !important;
+          padding-top: 15px !important;
+          border-top: 1px solid #000 !important;
+          display: block !important;
+     }
+      .print-section div[style*="justify-content:space-around"] > div {
+          margin-bottom: 10px !important;
+          width: 100% !important;
+      }
+
+    /* --- 4. 確保 modal 本身在列印時隱藏 --- */
+    #quotation-detail-modal {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    }
+    /* ================== 列印樣式結束 ================== */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>估價單清單 📄</h2>
+
+    <!-- 導覽列 -->
+    <div class="navbar">
+      <a href="notes.html" class="nav-link">我的筆記</a>
+      <a href="trash.html" class="nav-link">回收站</a>
+      <a href="quotation.html" class="nav-link">估價單</a>
+      <a href="quotation-list.html" class="nav-link active">估價單清單</a>
+      <a href="salary.html" class="nav-link">薪資管理</a>
+      <button id="logout-btn" class="nav-link" onclick="signOut()" style="margin-left:auto;">登出</button>
+    </div>
+
+    <!-- 估價單列表 -->
+    <div id="quotation-list-container">
+      <table class="quotation-list-table">
+        <thead>
+          <tr>
+            <th>報價名稱</th>
+            <th>客戶名稱</th>
+            <th>報價日期</th>
+            <th>總金額</th>
+            <th>建立時間</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="quotation-list-body">
+          <!-- 估價單列表將動態載入這裡 -->
+          <tr><td colspan="6">載入估價單清單中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 估價單詳情彈出視窗 -->
+    <div id="quotation-detail-modal" class="modal">
+      <div class="modal-content quotation-detail-content">
+        <div class="modal-header quotation-detail-header">
+          <h3>估價單詳情</h3>
+          <span class="modal-close quotation-detail-close" id="close-detail-modal">&times;</span>
+        </div>
+        <div id="quotation-detail-body">
+          <!-- 估價單詳細內容將載入這裡 -->
+        </div>
+         <div class="modal-footer" style="text-align: right; margin-top: 15px;">
+             <button id="print-detail-btn" class="button">列印此估價單</button>
+             <button id="delete-detail-btn" class="danger">刪除此估價單</button>
+         </div>
+      </div>
+    </div>
+
+
+    <!-- 載入中顯示 -->
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">處理中...</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+  <script>
+    let currentUser;
+    let allQuotations = []; // 用於儲存所有載入的估價單數據
+    let currentDetailQuotationId = null; // 用於儲存當前查看詳情的估價單 ID
+
+    // 顯示載入中狀態
+    function showLoading() {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.add('active');
+    }
+
+    // 隱藏載入中狀態
+    function hideLoading() {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+    // 初始化頁面
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await checkAuthAndRedirect();
+      if (!currentUser) return;
+
+      // 綁定登出按鈕
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) logoutBtn.addEventListener('click', signOut);
+
+      // 綁定關閉詳情視窗按鈕
+      const closeDetailModalBtn = document.getElementById('close-detail-modal');
+      if (closeDetailModalBtn) closeDetailModalBtn.addEventListener('click', closeQuotationDetailModal);
+
+      // 綁定詳情視窗中的刪除按鈕
+      const deleteDetailBtn = document.getElementById('delete-detail-btn');
+      if (deleteDetailBtn) deleteDetailBtn.addEventListener('click', handleDeleteQuotation);
+
+      // 綁定詳情視窗中的列印按鈕
+      const printDetailBtn = document.getElementById('print-detail-btn');
+      if (printDetailBtn) printDetailBtn.addEventListener('click', handlePrintQuotationDetail);
+
+
+      // 載入估價單列表
+      await loadQuotationList();
+    });
+
+    // 載入估價單列表數據
+    async function loadQuotationList() {
+      showLoading();
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('quotations') // 從 'quotations' 表讀取
+          .select('id, quotation_title, customer_name, date, total, created_at') // 選擇需要的欄位
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false }); // 按建立時間降序排列
+
+        if (error) throw error;
+
+        allQuotations = data || []; // 儲存數據
+        renderQuotationList(allQuotations);
+
+      } catch (error) {
+        console.error('載入估價單列表失敗：', error);
+        alert('❌ 載入估價單列表失敗：' + error.message);
+        document.getElementById('quotation-list-body').innerHTML = '<tr><td colspan="6" style="color: red;">無法載入估價單清單。</td></tr>';
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 渲染估價單列表
+    function renderQuotationList(quotations) {
+      const listBody = document.getElementById('quotation-list-body');
+      if (!listBody) return;
+
+      if (quotations.length === 0) {
+        listBody.innerHTML = '<tr><td colspan="6">目前沒有估價單記錄。</td></tr>';
+        return;
+      }
+
+      listBody.innerHTML = ''; // 清空現有列表
+
+      quotations.forEach(q => {
+        const row = listBody.insertRow();
+        row.innerHTML = `
+          <td>${q.quotation_title || 'N/A'}</td>
+          <td>${q.customer_name || 'N/A'}</td>
+          <td>${q.date || 'N/A'}</td>
+          <td>${q.total ? q.total.toLocaleString() : 'N/A'}</td>
+          <td>${q.created_at ? new Date(q.created_at).toLocaleString() : 'N/A'}</td>
+          <td><button class="danger" onclick="deleteQuotation(event, ${q.id})">刪除</button></td>
+        `;
+        // 添加點擊事件監聽器以顯示詳情
+        row.addEventListener('click', (event) => {
+            // 防止點擊刪除按鈕時觸發整行點擊事件
+            if (event.target.tagName.toLowerCase() !== 'button') {
+                openQuotationDetailModal(q.id);
+            }
+        });
+      });
+    }
+
+    // 打開估價單詳情彈出視窗
+    async function openQuotationDetailModal(id) {
+        showLoading();
+        currentDetailQuotationId = id; // 儲存當前查看的 ID
+        try {
+            // 從 allQuotations 中查找完整數據，如果找不到再從資料庫查詢
+            let quotation = allQuotations.find(q => q.id === id);
+
+            // 如果列表數據不包含 items，則需要重新查詢
+            if (!quotation || !quotation.items) {
+                 console.log(`ID ${id} 的完整數據不在 allQuotations 中，從資料庫查詢...`);
+                 const { data, error } = await window.supabaseClient
+                    .from('quotations')
+                    .select('*') // 獲取所有欄位，包括 items
+                    .eq('id', id)
+                    .eq('user_id', currentUser.id)
+                    .single(); // 期望只返回一條記錄
+
+                 if (error) throw error;
+                 if (!data) throw new Error('找不到該估價單');
+                 quotation = data;
+
+                 // 更新 allQuotations 中的數據 (可選)
+                 const index = allQuotations.findIndex(q => q.id === id);
+                 if (index !== -1) {
+                     allQuotations[index] = quotation;
+                 } else {
+                     // 如果原始列表中沒有，可能需要重新排序或添加
+                     // 為了簡單起見，這裡暫不處理
+                 }
+            } else {
+                 console.log(`從 allQuotations 中找到 ID ${id} 的完整數據。`);
+            }
+
+
+            const detailBody = document.getElementById('quotation-detail-body');
+            const modal = document.getElementById('quotation-detail-modal');
+
+            if (!detailBody || !modal) {
+                console.error('找不到詳情視窗元素');
+                hideLoading();
+                return;
+            }
+
+            // 生成詳情 HTML (與 quotation.html 的 preview 類似，但使用查詢到的數據)
+            let detailHtml = `
+                <h4>基本資訊</h4>
+                <p><strong>報價名稱：</strong> ${quotation.quotation_title || 'N/A'}</p>
+                <p><strong>客戶名稱：</strong> ${quotation.customer_name || 'N/A'}</p>
+                <p><strong>聯絡人：</strong> ${quotation.contact_person || 'N/A'}</p>
+                <p><strong>聯絡電話：</strong> ${quotation.contact_phone || 'N/A'}</p>
+                <p><strong>報價日期：</strong> ${quotation.date || 'N/A'}</p>
+                <p><strong>建立時間：</strong> ${new Date(quotation.created_at).toLocaleString()}</p>
+                <hr>
+                <h4>品項列表</h4>
+            `;
+
+            if (quotation.items && Array.isArray(quotation.items) && quotation.items.length > 0) {
+                detailHtml += `
+                    <table class="detail-items-table">
+                        <thead>
+                            <tr>
+                                <th>名稱</th>
+                                <th>規格</th>
+                                <th>數量</th>
+                                <th>單價</th>
+                                <th>總價</th>
+                                <th>備註</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                quotation.items.forEach(item => {
+                    detailHtml += `
+                        <tr>
+                            <td>${item.name || ''}</td>
+                            <td>${item.spec || ''}</td>
+                            <td style="text-align: center;">${item.quantity || 0}</td>
+                            <td style="text-align: right;">${(item.price || 0).toFixed(2)}</td>
+                            <td style="text-align: right;">${(item.subtotal || 0).toFixed(2)}</td>
+                            <td>${item.note || ''}</td>
+                        </tr>
+                    `;
+                });
+                detailHtml += `
+                        </tbody>
+                    </table>
+                    <div class="detail-total">總計：${(quotation.total || 0).toLocaleString()} 元</div>
+                `;
+            } else {
+                detailHtml += '<p>沒有品項資料。</p>';
+            }
+
+            detailBody.innerHTML = detailHtml;
+            modal.classList.add('active');
+
+        } catch (error) {
+            console.error('載入估價單詳情失敗：', error);
+            alert('❌ 載入估價單詳情失敗：' + error.message);
+            currentDetailQuotationId = null; // 失敗時重置 ID
+        } finally {
+            hideLoading();
+        }
+    }
+
+
+    // 關閉估價單詳情彈出視窗
+    function closeQuotationDetailModal() {
+      const modal = document.getElementById('quotation-detail-modal');
+      if (modal) modal.classList.remove('active');
+      currentDetailQuotationId = null; // 清除當前查看的 ID
+    }
+
+    // 刪除估價單 (列表中的按鈕)
+    async function deleteQuotation(event, id) {
+        event.stopPropagation(); // 阻止事件冒泡到行點擊事件
+
+        if (!confirm(`確定要刪除這筆估價單 (ID: ${id}) 嗎？`)) return;
+
+        showLoading();
+        try {
+            const { error } = await window.supabaseClient
+                .from('quotations')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', currentUser.id); // 確保只能刪除自己的記錄
+
+            if (error) throw error;
+
+            // 從 allQuotations 陣列中移除
+            allQuotations = allQuotations.filter(q => q.id !== id);
+            // 重新渲染列表
+            renderQuotationList(allQuotations);
+
+        } catch (error) {
+            console.error('刪除估價單失敗：', error);
+            alert('❌ 刪除估價單失敗：' + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // 處理從詳情視窗刪除估價單
+    async function handleDeleteQuotation() {
+        if (!currentDetailQuotationId) return;
+        if (!confirm(`確定要刪除這筆估價單 (ID: ${currentDetailQuotationId}) 嗎？`)) return;
+
+        showLoading();
+        try {
+            const { error } = await window.supabaseClient
+                .from('quotations')
+                .delete()
+                .eq('id', currentDetailQuotationId)
+                .eq('user_id', currentUser.id);
+
+            if (error) throw error;
+
+            // 從 allQuotations 陣列中移除
+            allQuotations = allQuotations.filter(q => q.id !== currentDetailQuotationId);
+            // 關閉詳情視窗
+            closeQuotationDetailModal();
+            // 重新渲染列表
+            renderQuotationList(allQuotations);
+
+        } catch (error) {
+            console.error('刪除估價單失敗：', error);
+            alert('❌ 刪除估價單失敗：' + error.message);
+        } finally {
+            hideLoading();
+            currentDetailQuotationId = null; // 無論如何都清除 ID
+        }
+    }
+
+    // 處理從詳情視窗列印估價單 (使其與 quotation.html 一致)
+    function handlePrintQuotationDetail() {
+        if (!currentDetailQuotationId) {
+            alert('沒有選定的估價單可供列印。');
+            return;
+        }
+
+        // 從 allQuotations 獲取當前查看的完整估價單數據
+        const quotation = allQuotations.find(q => q.id === currentDetailQuotationId);
+
+        if (!quotation) {
+            alert('找不到估價單資料，無法列印。');
+            return;
+        }
+
+        // 生成完整的列印 HTML 結構 (類似 quotation.html 的 previewQuotation)
+        let printHtml = `
+            <div style="text-align:center; font-size:24px; font-weight:bold; margin-bottom:10px;">大發鋼構有限公司</div>
+            <div style="text-align:center; font-size:18px; background:#f4a460; padding:5px; margin-bottom:10px;">報價單</div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+              <div>
+                <p><strong>報價名稱：</strong>${quotation.quotation_title || 'N/A'}</p>
+                <p><strong>客戶名稱：</strong>${quotation.customer_name || 'N/A'}</p>
+                <p><strong>聯絡人：</strong>${quotation.contact_person || 'N/A'}</p>
+                <p><strong>電話：</strong>${quotation.contact_phone || 'N/A'}</p>
+              </div>
+              <div>
+                <p><strong>報價日期：</strong>${quotation.date || 'N/A'}</p>
+              </div>
+            </div>
+            <div style="background:#ffff99; padding:5px; margin-bottom:10px;">
+              <p><strong>報價方資訊：</strong></p>
+              <p>公司名稱：大發鋼構有限公司</p>
+              <p>地址：彰化縣埤頭鄉平原村稻香路464巷28號</p>
+              <p>電話：09-20552261</p>
+            </div>
+            <table class="items-table detail-items-table" style="width:100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #eee;">名稱</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #eee;">規格</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #eee; text-align: center;">數量</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #eee; text-align: right;">單價</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #eee; text-align: right;">總價</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #eee;">備註</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        if (quotation.items && Array.isArray(quotation.items)) {
+            quotation.items.forEach(item => {
+                printHtml += `
+                  <tr>
+                    <td style="border: 1px solid #000; padding: 5px;">${item.name || ''}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">${item.spec || ''}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${item.quantity || 0}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">${(item.price || 0).toFixed(2)}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">${(item.subtotal || 0).toFixed(2)}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">${item.note || ''}</td>
+                  </tr>
+                `;
+            });
+        }
+
+        printHtml += `
+              </tbody>
+            </table>
+            <div style="margin-top:10px; font-weight:bold; text-align:right; padding-right:10px;">總計新台幣：${(quotation.total || 0).toLocaleString()}元整</div>
+            <div style="background:#ffff99; padding:5px; margin-top:10px;">
+              <p><strong>附註：</strong></p>
+              <p>1.以上單價未稅價.  以上估算報價不含未詳列之工項工程。</p>
+              <p>2.簽約同時支付總工程款之30%(現金票)</p>
+              <p>3.製作完成進場按裝再支付總工程款之40%(現金票)</p>
+              <p>4.按裝完成再支付總工程款之30%(現金票)</p>
+              <p>5.本工程7天內驗收完畢付清尾款(現金票)</p>
+              <p>6.如已完成廠內製作，惟因其他工程延誤，致無法進場安裝，仍須依項2支付總工程款之40%</p>
+              <p>7.此單確認回傳後，示為貴司遵守以上之約定。</p>
+            </div>
+            <div style="margin-top:40px; padding-top: 20px; border-top: 1px solid #ccc; display:flex; justify-content:space-around;">
+              <div>付款方式：_________________________</div>
+              <div>客戶確認簽名：_________________________</div>
+            </div>
+        `;
+
+        // 創建臨時列印區塊
+        const printSection = document.createElement('div');
+        printSection.innerHTML = printHtml;
+        printSection.classList.add('print-section'); // 應用列印樣式
+        printSection.style.position = 'absolute';
+        printSection.style.left = '-9999px'; // 移出畫面外
+        document.body.appendChild(printSection);
+
+        // 使用延遲確保內容渲染
+        setTimeout(() => {
+            try {
+                window.print(); // 觸發瀏覽器列印
+            } catch (error) {
+                console.error('列印失敗:', error);
+                alert('列印失敗: ' + error.message);
+            } finally {
+                // 列印後移除臨時區塊
+                document.body.removeChild(printSection);
+            }
+        }, 100);
+    }
+
+
+  </script>
+</body>
+</html>

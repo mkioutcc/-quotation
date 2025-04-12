@@ -16,7 +16,10 @@
       <a href="notes.html" class="nav-link">我的筆記</a>
       <a href="trash.html" class="nav-link active">回收站</a>
       <a href="quotation.html" class="nav-link">估價單</a>
-      <button id="refresh-button" class="refresh-button">🔄 刷新</button>
+      <a href="quotation-list.html" class="nav-link">估價單清單</a>
+      <a href="salary.html" class="nav-link">薪資管理</a>
+      <button id="refresh-button" class="refresh-button" style="margin-right: auto;">🔄 刷新</button>
+      <button id="logout-btn" class="nav-link" onclick="signOut()">登出</button>
     </div>
 
     <!-- 回收站內容 -->
@@ -24,7 +27,7 @@
       <!-- 回收站筆記將在這裡顯示 -->
     </div>
 
-    <button onclick="signOut()" class="danger">登出</button>
+    <!-- 移除底部的登出按鈕 -->
   </div>
 
   <!-- 載入中顯示 -->
